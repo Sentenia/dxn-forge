@@ -99,10 +99,10 @@ function Footer({ connectedChain = 'Ethereum' }) {
         <div className="footer-section">
           <h3 className="section-title">Resources</h3>
           <div className="link-list">
-            <a href="https://github.com/Sentenia/dxn-forge-cl/blob/main/docs/DXN_Forge_Litepaper.md" className="footer-link" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/Sentenia/dxn-forge/blob/main/docs/DXN_Forge_Litepaper.md" className="footer-link" target="_blank" rel="noopener noreferrer">
               <FileText size={16} style={{display: 'inline', marginRight: '6px'}} /> Litepaper
             </a>
-            <a href="https://github.com/Sentenia/dxn-forge-cl" className="footer-link" target="_blank" rel="noopener noreferrer">
+            <a href="https://github.com/Sentenia/dxn-forge" className="footer-link" target="_blank" rel="noopener noreferrer">
               <Github size={16} style={{display: 'inline', marginRight: '6px'}} /> GitHub
             </a>
             <a href="https://dbxen.app" className="footer-link" target="_blank" rel="noopener noreferrer">
