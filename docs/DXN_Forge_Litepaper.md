@@ -128,7 +128,7 @@ Users stake DXN tokens to earn:
 
 **Benefits:**
 - Earns standard tickets/GOLD (normal staking benefits continue)
-- PLUS exclusive access to 1.12% LTS ETH bucket
+- PLUS exclusive access to 3.12% LTS ETH bucket
 - ETH accumulates daily, claimable anytime
 - Tokens locked until maturity date
 
@@ -142,14 +142,14 @@ Users stake DXN tokens to earn:
 
 **Auto-Staking:**
 - All GOLD minted from tickets is automatically staked
-- Earns from 90% ETH fee bucket immediately
+- Earns from 88% ETH fee bucket immediately
 
 **Manual Staking:**
 - Users can stake additional GOLD from wallet
 - Subject to DBXen lock+1 rule (locks until next cycle + no rewards that cycle)
 
 **Rewards:**
-- Proportional share of 90% ETH fees
+- Proportional share of 88% ETH fees
 - Claimable at any time
 - Compounds over time if not claimed
 
@@ -252,7 +252,7 @@ XEN burners receive tickets just like DXN stakers:
 ### 7.2 For GOLD Holders
 
 **Direct:**
-- 90% of protocol ETH fees
+- 88% of protocol ETH fees
 - Auto-staking (no action required)
 - Compounding rewards
 
