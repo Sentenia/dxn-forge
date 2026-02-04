@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Flame, Wallet, Check, ChevronDown, AlertCircle, Gem, Zap, ExternalLink, Copy, LogOut } from 'lucide-react';
+import { ethers } from 'ethers';
 import { useFaucet } from '../hooks/useFaucet';
 import { useWallet } from '../hooks/useWallet';
+import { useForgeData } from '../hooks/useForgeData';
+import { CONTRACTS } from '../contracts';
 import './Header.css';
 
 function Header({ onNavigate, currentPage = 'stake' }) {
@@ -13,16 +16,23 @@ function Header({ onNavigate, currentPage = 'stake' }) {
   const [showCoffeeToast, setShowCoffeeToast] = useState(false);
   const [showCopyToast, setShowCopyToast] = useState(false);
   
+  // Token balances come from useForgeData — no separate RPC needed
+  const { protocol, user } = useForgeData();
+  
+  const tokenBalances = {
+    dxn: parseFloat(user.dxnBalance).toLocaleString(undefined, { maximumFractionDigits: 2 }),
+    xen: parseFloat(user.xenBalance || '0').toLocaleString(undefined, { maximumFractionDigits: 0 }),
+    gold: parseFloat(user.goldBalance).toLocaleString(undefined, { maximumFractionDigits: 4 }),
+  };
+  
   const navMenuRef = useRef(null);
   const chainMenuRef = useRef(null);
   const walletMenuRef = useRef(null);
   
-  // Real wallet connection with balance
   const { address, connected, connect, disconnect, formatAddress, balance, chainId, isOnSepolia, switchToSepolia } = useWallet();
   
-  // Faucet hooks
-  const dxnFaucet = useFaucet('DXN');
-  const xenFaucet = useFaucet('XEN');
+  const dxnFaucet = useFaucet('DXN', address);
+  const xenFaucet = useFaucet('XEN', address);
   
   const TIP_ADDRESS = '0x8B15d4b385eeCeC23cA32C8Dc45a48876d5FcbF4';
   
@@ -36,7 +46,6 @@ function Header({ onNavigate, currentPage = 'stake' }) {
     { name: 'Avalanche', icon: '🔺', chainId: 43114 },
   ];
 
-  // Auto-detect network when wallet connects
   useEffect(() => {
     if (connected && chainId) {
       const network = chains.find(c => c.chainId === chainId);
@@ -46,14 +55,12 @@ function Header({ onNavigate, currentPage = 'stake' }) {
     }
   }, [connected, chainId]);
 
-  // Load theme
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(savedTheme);
     document.documentElement.setAttribute('data-theme', savedTheme);
   }, []);
 
-  // Click outside to close menus
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (navMenuRef.current && !navMenuRef.current.contains(event.target)) {
@@ -111,9 +118,8 @@ function Header({ onNavigate, currentPage = 'stake' }) {
     <>
       <header className="app-header">
         <div className="header-content">
-          {/* Left: Hamburger Menu + Logo */}
+          {/* Left: Hamburger Menu + Logo + Stats */}
           <div className="header-left">
-            {/* Hamburger Menu */}
             <div className="nav-menu-wrapper" ref={navMenuRef}>
               <button 
                 className="hamburger-btn"
@@ -146,7 +152,6 @@ function Header({ onNavigate, currentPage = 'stake' }) {
               )}
             </div>
 
-            {/* Logo */}
             <div className="header-logo" onClick={() => onNavigate('stake')} style={{cursor: 'pointer'}}>
               <div className="logo-wrapper">
                 <div className="logo-circle">
@@ -156,12 +161,23 @@ function Header({ onNavigate, currentPage = 'stake' }) {
                 <span className="logo-text">DXN Forge</span>
               </div>
             </div>
+
+            {/* Protocol Stats - Pill Style */}
+            <div className="header-stats-pills">
+              <div className="stat-pill">
+                <span className="stat-pill-label">Epoch</span>
+                <span className="stat-pill-value">{protocol.currentEpoch || 1}</span>
+              </div>
+              <div className="stat-pill">
+                <span className="stat-pill-label">Cycle</span>
+                <span className="stat-pill-value">{protocol.currentCycle || 1}</span>
+              </div>
+            </div>
           </div>
 
           {/* Center: Testnet Faucet Buttons */}
           <div className="header-center">
             <div className="faucet-buttons">
-              {/* ETH Faucet */}
               <button 
                 className="faucet-btn"
                 onClick={() => window.open('https://www.alchemy.com/faucets/ethereum-sepolia', '_blank')}
@@ -174,7 +190,6 @@ function Header({ onNavigate, currentPage = 'stake' }) {
                 </div>
               </button>
               
-              {/* DXN Faucet */}
               <button 
                 className={`faucet-btn ${!dxnFaucet.canClaim || dxnFaucet.claiming ? 'disabled' : ''}`}
                 onClick={dxnFaucet.claim}
@@ -193,7 +208,6 @@ function Header({ onNavigate, currentPage = 'stake' }) {
                 )}
               </button>
               
-              {/* XEN Faucet */}
               <button 
                 className={`faucet-btn ${!xenFaucet.canClaim || xenFaucet.claiming ? 'disabled' : ''}`}
                 onClick={xenFaucet.claim}
@@ -214,8 +228,10 @@ function Header({ onNavigate, currentPage = 'stake' }) {
             </div>
           </div>
 
-          {/* Right: Chain Selector + Wallet + Coffee + Theme */}
+          {/* Right: Stats + Chain + Wallet + Coffee + Theme */}
           <div className="header-actions">
+            
+
             {/* Chain Selector */}
             <div className="chain-selector-wrapper" ref={chainMenuRef}>
               <button 
@@ -249,7 +265,7 @@ function Header({ onNavigate, currentPage = 'stake' }) {
               )}
             </div>
 
-            {/* Wallet Button with Dropdown */}
+            {/* Wallet Button */}
             <div className="wallet-wrapper" ref={walletMenuRef}>
               <button 
                 className={`wallet-btn ${connected ? 'connected' : ''}`}
@@ -271,27 +287,33 @@ function Header({ onNavigate, currentPage = 'stake' }) {
                 )}
               </button>
 
-              {/* Wallet Dropdown Menu */}
               {connected && showWalletMenu && (
                 <div className="wallet-dropdown">
-                  <button 
-                    className="wallet-menu-item"
-                    onClick={handleCopyAddress}
-                  >
+                  {/* Token Balances */}
+                  <div className="wallet-balances">
+                    <div className="wallet-balance-row">
+                      <span className="balance-token" style={{color: '#f59e0b'}}>GOLD</span>
+                      <span className="balance-amount">{tokenBalances.gold}</span>
+                    </div>
+                    <div className="wallet-balance-row">
+                      <span className="balance-token">DXN</span>
+                      <span className="balance-amount">{tokenBalances.dxn}</span>
+                    </div>
+                    <div className="wallet-balance-row">
+                      <span className="balance-token">XEN</span>
+                      <span className="balance-amount">{tokenBalances.xen}</span>
+                    </div>
+                  </div>
+                  <div className="wallet-menu-divider"></div>
+                  <button className="wallet-menu-item" onClick={handleCopyAddress}>
                     <Copy size={16} />
                     <span>Copy Address</span>
                   </button>
-                  <button 
-                    className="wallet-menu-item"
-                    onClick={handleViewOnExplorer}
-                  >
+                  <button className="wallet-menu-item" onClick={handleViewOnExplorer}>
                     <ExternalLink size={16} />
                     <span>View on Etherscan</span>
                   </button>
-                  <button 
-                    className="wallet-menu-item disconnect"
-                    onClick={handleDisconnect}
-                  >
+                  <button className="wallet-menu-item disconnect" onClick={handleDisconnect}>
                     <LogOut size={16} />
                     <span>Disconnect</span>
                   </button>
@@ -299,16 +321,11 @@ function Header({ onNavigate, currentPage = 'stake' }) {
               )}
             </div>
 
-            {/* Coffee Tip Button */}
-            <button 
-              className="coffee-btn" 
-              onClick={handleCoffeeClick}
-            >
+            <button className="coffee-btn" onClick={handleCoffeeClick}>
               <span className="coffee-emoji">☕</span>
-              <div className="coffee-tooltip">Buy me a coffee!</div>
+              <div className="coffee-tooltip">Keep the Dev caffeinated!</div>
             </button>
 
-            {/* Theme Toggle */}
             <button className="theme-btn" title="Toggle theme" onClick={toggleTheme}>
               {theme === 'dark' ? '☀️' : '🌙'}
             </button>
@@ -316,50 +333,34 @@ function Header({ onNavigate, currentPage = 'stake' }) {
         </div>
       </header>
 
-      {/* Copy Address Toast */}
       {showCopyToast && (
-        <div className="copy-toast">
-          ✅ Address copied to clipboard!
-        </div>
+        <div className="copy-toast">✅ Address copied to clipboard!</div>
       )}
 
-      {/* Coffee Toast */}
       {showCoffeeToast && (
-        <div className="coffee-toast">
-          ☕ Tip address copied! {TIP_ADDRESS}
-        </div>
+        <div className="coffee-toast">☕ Tip address copied! {TIP_ADDRESS}</div>
       )}
 
-      {/* Network Warning */}
       {connected && !isOnSepolia && (
         <div className="network-warning-banner">
           <AlertCircle size={16} />
           <span>Wrong network! Please switch to Sepolia</span>
-          <button 
-            className="switch-network-btn"
-            onClick={switchToSepolia}
-          >
+          <button className="switch-network-btn" onClick={switchToSepolia}>
             Switch to Sepolia
           </button>
         </div>
       )}
 
-      {/* Test Phase Banner */}
       <div className="test-banner">
         <AlertCircle size={16} />
         <span>TESTNET: Sepolia Network - Use test tokens only</span>
       </div>
       
-      {/* Success/Error Messages */}
       {(dxnFaucet.success || xenFaucet.success) && (
-        <div className="faucet-success-banner">
-          ✅ Tokens claimed successfully!
-        </div>
+        <div className="faucet-success-banner">✅ Tokens claimed successfully!</div>
       )}
       {(dxnFaucet.error || xenFaucet.error) && (
-        <div className="faucet-error-banner">
-          ❌ {dxnFaucet.error || xenFaucet.error}
-        </div>
+        <div className="faucet-error-banner">❌ {dxnFaucet.error || xenFaucet.error}</div>
       )}
     </>
   );

@@ -1,28 +1,61 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
+
+const SEPOLIA_CHAIN_ID = 11155111;
 
 export const useWallet = () => {
   const [address, setAddress] = useState(null);
   const [connected, setConnected] = useState(false);
   const [chainId, setChainId] = useState(null);
-  const [balance, setBalance] = useState('0');
+  const [balance, setBalance] = useState('0.00');
   const [error, setError] = useState(null);
 
-  // Sepolia chain ID (decimal: 11155111, hex: 0xaa36a7)
-  const SEPOLIA_CHAIN_ID = 11155111;
-
-  // Check if already connected on mount (but don't prompt)
-  useEffect(() => {
-    checkIfConnected();
+  // Fetch ETH balance — uses MetaMask but only when already connected
+  const fetchBalance = useCallback(async (addr) => {
+    try {
+      if (!window.ethereum || !addr) return;
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const balanceWei = await provider.getBalance(addr);
+      setBalance(parseFloat(ethers.formatEther(balanceWei)).toFixed(2));
+    } catch (err) {
+      // Silently fail — balance display is not critical
+    }
   }, []);
 
-  // Listen for account/chain changes
+  // On mount: check if already connected (NON-PROMPTING)
+  // Small delay to let MetaMask's service worker wake up
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      try {
+        if (!window.ethereum) return;
+        // eth_accounts is non-prompting — just checks silently
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          const chainHex = await window.ethereum.request({ method: 'eth_chainId' });
+          setAddress(accounts[0]);
+          setConnected(true);
+          setChainId(parseInt(chainHex, 16));
+          fetchBalance(accounts[0]);
+        }
+      } catch (err) {
+        // MetaMask service worker might be dead — that's fine, user can click Connect
+        console.warn('MetaMask check skipped:', err.message);
+      }
+    }, 500); // 500ms delay lets MetaMask initialize
+
+    return () => clearTimeout(timer);
+  }, [fetchBalance]);
+
+  // Listen for MetaMask account/chain changes
   useEffect(() => {
     if (!window.ethereum) return;
 
     const handleAccountsChanged = (accounts) => {
       if (accounts.length === 0) {
-        disconnect();
+        setAddress(null);
+        setConnected(false);
+        setChainId(null);
+        setBalance('0.00');
       } else {
         setAddress(accounts[0]);
         setConnected(true);
@@ -30,9 +63,9 @@ export const useWallet = () => {
       }
     };
 
-    const handleChainChanged = () => {
-      // Reload page on chain change (recommended by MetaMask)
-      window.location.reload();
+    const handleChainChanged = (chainHex) => {
+      setChainId(parseInt(chainHex, 16));
+      if (address) fetchBalance(address);
     };
 
     window.ethereum.on('accountsChanged', handleAccountsChanged);
@@ -44,83 +77,38 @@ export const useWallet = () => {
         window.ethereum.removeListener('chainChanged', handleChainChanged);
       }
     };
-  }, []);
+  }, [address, fetchBalance]);
 
-  // Poll balance every 10 seconds if connected
+  // Poll balance every 15s when connected
   useEffect(() => {
     if (!connected || !address) return;
-
-    fetchBalance(address);
-    const interval = setInterval(() => {
-      fetchBalance(address);
-    }, 10000);
-
+    const interval = setInterval(() => fetchBalance(address), 15000);
     return () => clearInterval(interval);
-  }, [connected, address]);
+  }, [connected, address, fetchBalance]);
 
-  const fetchBalance = async (addr) => {
-    try {
-      if (!window.ethereum || !addr) return;
-
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const balanceWei = await provider.getBalance(addr);
-      const balanceEth = ethers.formatEther(balanceWei);
-      
-      // Format to 2 decimal places
-      setBalance(parseFloat(balanceEth).toFixed(2));
-    } catch (err) {
-      console.error('Error fetching balance:', err);
-    }
-  };
-
-  const checkIfConnected = async () => {
-    try {
-      if (!window.ethereum) return;
-
-      // Check without prompting
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-      
-      if (accounts.length > 0) {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const network = await provider.getNetwork();
-        
-        setAddress(accounts[0]);
-        setConnected(true);
-        setChainId(Number(network.chainId));
-        await fetchBalance(accounts[0]);
-      }
-    } catch (err) {
-      console.error('Error checking connection:', err);
-    }
-  };
-
+  // Connect — the ONLY function that prompts MetaMask
   const connect = async () => {
     try {
       setError(null);
-
       if (!window.ethereum) {
-        throw new Error('Please install MetaMask');
+        setError('Please install MetaMask');
+        return;
       }
 
-      // Request account access
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts'
-      });
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      if (!accounts || accounts.length === 0) return;
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const network = await provider.getNetwork();
-
+      const chainHex = await window.ethereum.request({ method: 'eth_chainId' });
       setAddress(accounts[0]);
       setConnected(true);
-      setChainId(Number(network.chainId));
+      setChainId(parseInt(chainHex, 16));
       await fetchBalance(accounts[0]);
 
-      // If not on Sepolia, prompt to switch
-      if (Number(network.chainId) !== SEPOLIA_CHAIN_ID) {
-        await switchToSepolia();
+      if (parseInt(chainHex, 16) !== SEPOLIA_CHAIN_ID) {
+        try { await switchToSepolia(); } catch (e) { /* non-fatal */ }
       }
     } catch (err) {
-      console.error('Connection error:', err);
+      console.error('Wallet connect error:', err);
       setError(err.message);
     }
   };
@@ -129,61 +117,45 @@ export const useWallet = () => {
     setAddress(null);
     setConnected(false);
     setChainId(null);
-    setBalance('0');
+    setBalance('0.00');
   };
 
   const switchToSepolia = async () => {
     try {
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0xaa36a7' }], // Hex format
+        params: [{ chainId: '0xaa36a7' }],
       });
     } catch (switchError) {
-      // If Sepolia not added, add it
       if (switchError.code === 4902) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: '0xaa36a7',
-                chainName: 'Sepolia Testnet',
-                nativeCurrency: {
-                  name: 'Sepolia ETH',
-                  symbol: 'ETH',
-                  decimals: 18,
-                },
-                rpcUrls: ['https://sepolia.infura.io/v3/'],
-                blockExplorerUrls: ['https://sepolia.etherscan.io'],
-              },
-            ],
-          });
-        } catch (addError) {
-          throw new Error('Failed to add Sepolia network');
-        }
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [{
+            chainId: '0xaa36a7',
+            chainName: 'Sepolia Testnet',
+            nativeCurrency: { name: 'Sepolia ETH', symbol: 'ETH', decimals: 18 },
+            rpcUrls: ['https://rpc.sepolia.org'],
+            blockExplorerUrls: ['https://sepolia.etherscan.io'],
+          }],
+        });
       } else {
         throw switchError;
       }
     }
   };
 
-  const formatAddress = (addr) => {
-    if (!addr) return '';
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
-
-  const isOnSepolia = chainId === SEPOLIA_CHAIN_ID;
+  const fmtAddr = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
 
   return {
     address,
     connected,
     chainId,
     balance,
-    isOnSepolia,
+    isOnSepolia: chainId === SEPOLIA_CHAIN_ID,
     error,
     connect,
     disconnect,
     switchToSepolia,
-    formatAddress: formatAddress(address)
+    formatAddress: fmtAddr,
   };
 };

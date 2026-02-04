@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { ethers } from 'ethers';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import InfoCards from './components/InfoCards';
@@ -10,7 +11,24 @@ import Footer from './components/Footer';
 import './styles/Dashboard.css';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('stake'); // 'stake', 'longterm', 'burn'
+  const [currentPage, setCurrentPage] = useState('stake');
+  const [provider, setProvider] = useState(null);
+  const [account, setAccount] = useState(null);
+
+  useEffect(() => {
+    if (window.ethereum) {
+      const prov = new ethers.BrowserProvider(window.ethereum);
+      setProvider(prov);
+      
+      prov.listAccounts().then(accounts => {
+        if (accounts.length > 0) setAccount(accounts[0]);
+      });
+
+      window.ethereum.on('accountsChanged', (accounts) => {
+        setAccount(accounts[0] || null);
+      });
+    }
+  }, []);
 
   const handleNavigation = (page) => {
     setCurrentPage(page);
@@ -30,14 +48,18 @@ function App() {
       )}
 
       {currentPage === 'longterm' && (
-        <LongTermStaking />
+        <LongTermStaking 
+          onNavigate={handleNavigation} 
+          provider={provider} 
+          account={account} 
+        />
       )}
 
       {currentPage === 'burn' && (
-        <BurnXEN />
+        <BurnXEN onNavigate={handleNavigation} />
       )}
 
-      <Footer />
+      <Footer currentPage={currentPage} onNavigate={handleNavigation} />
     </div>
   );
 }

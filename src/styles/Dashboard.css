@@ -1065,3 +1065,586 @@ body {
   color: #ff9d00;
   transform: translateY(-2px);
 }
+
+/* Add this to your Dashboard.css or create BigCards.css */
+
+/* Fee Split Section */
+.fee-split-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.fee-split-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+}
+
+.fee-split-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.fee-label {
+  color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fee-icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.fee-icon.gold {
+  color: #f5a623;
+}
+
+.fee-icon.burn {
+  color: #ef4444;
+}
+
+.fee-icon.lts {
+  color: #8b5cf6;
+}
+
+.fee-value {
+  color: #f5a623;
+  font-weight: 600;
+}
+
+/* Testnet Note - TODO: Remove for mainnet */
+.testnet-note {
+  margin-top: 12px;
+  padding: 8px 10px;
+  background: rgba(245, 166, 35, 0.1);
+  border-radius: 6px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+}
+
+/* Tickets Info Card - Add to your main CSS or import separately */
+.tickets-info-card {
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, rgba(245, 166, 35, 0.15) 0%, rgba(245, 166, 35, 0.05) 100%);
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  border-radius: 12px;
+}
+
+.tickets-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #f5a623;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.75rem;
+}
+
+.tickets-icon {
+  color: #f5a623;
+}
+
+.tickets-total {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #f5a623;
+  text-align: center;
+  padding: 0.5rem 0;
+  text-shadow: 0 0 20px rgba(245, 166, 35, 0.3);
+}
+
+.tickets-breakdown {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tickets-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tickets-row span:last-child {
+  color: #fff;
+  font-weight: 500;
+}
+
+.tickets-hint {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+/* Sync Button - Inline in header */
+.stake-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sync-button-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  background: rgba(245, 166, 35, 0.15);
+  border: 1px solid rgba(245, 166, 35, 0.3);
+  border-radius: 6px;
+  color: #f5a623;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: auto;
+}
+
+.sync-button-inline:hover:not(:disabled) {
+  background: rgba(245, 166, 35, 0.25);
+  border-color: #f5a623;
+}
+
+.sync-button-inline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sync-button-inline .spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Sync Button - Standalone (deprecated but kept for reference) */
+.sync-button-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem;
+}
+
+.sync-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(245, 166, 35, 0.2);
+  border: 1px solid rgba(245, 166, 35, 0.4);
+  border-radius: 8px;
+  color: #f5a623;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sync-button:hover:not(:disabled) {
+  background: rgba(245, 166, 35, 0.3);
+  border-color: #f5a623;
+}
+
+.sync-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sync-button .spinning {
+  animation: spin 1s linear infinite;
+}
+
+.sync-tooltip {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+/* Percentage Buttons for Buy & Burn */
+.bnb-percentage {
+  margin: 1rem 0;
+}
+
+.bnb-percentage-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.pct-btn {
+  flex: 1;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pct-btn:hover {
+  background: rgba(245, 166, 35, 0.2);
+  border-color: rgba(245, 166, 35, 0.4);
+  color: #f5a623;
+}
+
+.pct-btn.active {
+  background: rgba(245, 166, 35, 0.3);
+  border-color: #f5a623;
+  color: #f5a623;
+}
+
+.bnb-burn-amount {
+  text-align: center;
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.ticket-mint-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: rgba(138, 43, 226, 0.1);
+  border: 1px solid rgba(138, 43, 226, 0.3);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #ba55d3;
+}
+
+.ticket-icon {
+  flex-shrink: 0;
+  color: #ba55d3;
+}
+
+.claim-error-box {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 8px;
+  font-size: 12px;
+  color: #ef4444;
+  text-align: center;
+}
+
+.info-card-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ticket-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ticket-mini {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-radius: 10px;
+}
+
+.ticket-mini.burner {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.ticket-mini.burner .mini-icon {
+  color: #ef4444;
+}
+
+.ticket-mini.burner .mini-value {
+  color: #ef4444;
+}
+
+.ticket-mini.staker {
+  background: rgba(255, 157, 0, 0.15);
+  border: 1px solid rgba(255, 157, 0, 0.4);
+}
+
+.ticket-mini.staker .mini-icon {
+  color: #ff9d00;
+}
+
+.ticket-mini.staker .mini-value {
+  color: #ff9d00;
+}
+
+.mini-icon {
+  flex-shrink: 0;
+}
+
+.mini-label {
+  font-size: 14px;
+  color: #d1d5db;
+  font-weight: 500;
+}
+
+.mini-value {
+  font-size: 16px;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+
+.info-card-value.gold {
+  color: #ff9d00;
+}
+
+.info-card-value.purple {
+  color: #ba55d3;
+}
+
+.info-card-icon.gold {
+  color: #ff9d00;
+}
+
+.info-card-icon.purple {
+  color: #ba55d3;
+}                             
+
+/* ========== Stats Grid ========== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 1000px;
+  margin: 0 auto 40px;
+  padding: 0 20px;
+}
+
+/* ========== Card Base ========== */
+.stat-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.25s ease, background 0.25s ease;
+}
+
+.stat-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Left accent stripe */
+.stat-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  opacity: 0.7;
+  transition: opacity 0.25s ease;
+}
+
+.stat-card:hover::before {
+  opacity: 1;
+}
+
+.stat-card.accent-amber::before  { background: #f59e0b; }
+.stat-card.accent-orange::before { background: #f97316; }
+.stat-card.accent-red::before    { background: #ef4444; }
+.stat-card.accent-gold::before   { background: #eab308; }
+.stat-card.accent-purple::before { background: #a855f7; }
+
+/* ========== Card Header ========== */
+.stat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-header svg {
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* ========== Card Value ========== */
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: #f3f4f6;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  padding-left: 2px;
+}
+
+.stat-value small {
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  margin-left: 2px;
+}
+
+.stat-value.eth   { color: #f3f4f6; }
+.stat-value.gold   { color: #eab308; }
+.stat-value.purple { color: #c084fc; }
+
+/* ========== Card Footer ========== */
+.stat-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: auto;
+  min-height: 24px;
+}
+
+.stat-footer.split {
+  gap: 0;
+}
+
+.stat-sub {
+  font-size: 11px;
+  color: #4b5563;
+  font-weight: 400;
+}
+
+/* ========== Tags ========== */
+.stat-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.stat-tag.amber {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+.stat-tag.red {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+}
+
+.stat-tag.gold {
+  background: rgba(234, 179, 8, 0.15);
+  color: #facc15;
+}
+
+.stat-tag.purple {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+}
+
+/* ========== Ticket Split Footer ========== */
+.stat-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  padding: 3px 0;
+}
+
+.stat-mini svg {
+  opacity: 0.5;
+}
+
+.stat-mini.fire {
+  color: #78716c;
+}
+
+.stat-divider {
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 10px;
+}
+
+/* ========== Skeleton Loading ========== */
+.stat-card.skeleton {
+  gap: 12px;
+}
+
+.skeleton-line {
+  height: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-line.short { width: 40%; }
+.skeleton-line.long  { width: 70%; height: 28px; }
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.4; }
+  50%      { opacity: 0.8; }
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .stat-value {
+    font-size: 22px;
+  }
+
+  .stat-header {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 16px;
+  }
+
+  .stat-value {
+    font-size: 24px;
+  }
+}

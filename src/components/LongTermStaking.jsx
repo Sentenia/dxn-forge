@@ -5,84 +5,239 @@ import {
   Coins, 
   AlertTriangle, 
   Gem, 
-  DollarSign, 
   TrendingUp,
   Clock,
   CheckCircle,
-  XCircle,
-  BarChart3
+  BarChart3,
+  Loader,
+  ExternalLink,
+  Flame
 } from 'lucide-react';
 import './LongTermStaking.css';
+import NavAccordion from './NavAccordion';
+import ConfirmModal from './ConfirmModal';
+import { useLTS } from '../hooks/useLTS';
 
-function LongTermStaking() {
-  const [selectedTier, setSelectedTier] = useState(5000);
-  const [lockType, setLockType] = useState('DXN'); // 'DXN' or 'GOLD'
+function LongTermStaking({ onNavigate, provider, account }) {
+  const [selectedTier, setSelectedTier] = useState(4);
+  const [lockType, setLockType] = useState('DXN');
   const [amount, setAmount] = useState('');
+  const [showLockModal, setShowLockModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [commitMode, setCommitMode] = useState('single'); // 'single' or 'all'
 
-  const tiers = [
-    { days: 1000, weight: '1x', share: '5%' },
-    { days: 2000, weight: '2x', share: '10%' },
-    { days: 3000, weight: '3x', share: '15%' },
-    { days: 4000, weight: '4x', share: '20%' },
-    { days: 5000, weight: '5x', share: '50%' },
-  ];
+  const {
+    loading,
+    error,
+    currentCrucible,
+    crucibleInfo,
+    isWindowOpen,
+    windowClosed,
+    canStartNewCrucible,
+    currentCycle,
+    currentEpoch,
+    totalDXNByTier,
+    totalGOLDByTier,
+    ltsEthBucket,
+    tierSnapshots,
+    userPendingDXN,
+    userPendingGOLD,
+    userHasMinted,
+    userNFTs,
+    userStakedDXN,
+    userStakedGOLD,
+    addDXNToLTS,
+    addGOLDToLTS,
+    addDXNAllToLTS,
+    addGOLDAllToLTS,
+    mintLTSNFTs,
+    claimLTS,
+    startNewCrucible,
+    getTierEthAllocation,
+    getWindowStatus,
+    TIERS,
+    refreshData,
+  } = useLTS(provider, account);
+
+  const tiers = TIERS.map(t => ({
+    ...t,
+    weight: `${t.weight}x`,
+    share: `${((t.weight / 15) * 100).toFixed(1)}%`,
+  }));
 
   const userBalances = {
-    DXN: 1000,
-    GOLD: 250
+    DXN: parseFloat(userStakedDXN) || 0,
+    GOLD: parseFloat(userStakedGOLD) || 0,
   };
 
-  // Mock active positions
-  const activePositions = [
-    { tier: '5000d', amount: '1000 DXN', maturity: '2038-06-15', claimable: '0.45 ETH', status: 'locked' },
-    { tier: '3000d', amount: '500 GOLD', maturity: '2033-01-20', claimable: '0.23 ETH', status: 'locked' },
-  ];
+  const totalDXNLocked = totalDXNByTier.reduce((a, b) => a + b, 0);
+  const totalGOLDLocked = totalGOLDByTier.reduce((a, b) => a + b, 0);
+  const userTotalDXN = userPendingDXN.reduce((a, b) => a + b, 0);
+  const userTotalGOLD = userPendingGOLD.reduce((a, b) => a + b, 0);
+  const hasPendingToMint = !userHasMinted && (userTotalDXN > 0 || userTotalGOLD > 0);
+  const canDeposit = isWindowOpen;
 
-  const handleLock = () => {
-    const tierInfo = tiers.find(t => t.days === selectedTier);
-    const confirmMessage = `⚠️ PERMANENT LOCK COMMITMENT ⚠️
+  const handleLock = (mode) => {
+    if (!canDeposit) {
+      alert(`Deposit window is not open. Current cycle: ${currentCycle}`);
+      return;
+    }
+    if (!amount || Number(amount) <= 0) {
+      alert('Please enter a valid amount');
+      return;
+    }
+    if (Number(amount) > userBalances[lockType]) {
+      alert(`Insufficient ${lockType} balance`);
+      return;
+    }
+    setCommitMode(mode);
+    setShowLockModal(true);
+  };
 
-You are about to lock ${amount} ${lockType} for ${selectedTier} days (${(selectedTier / 365).toFixed(1)} years).
-
-CRITICAL WARNINGS:
-• Once Epoch 51 closes, your tokens are PERMANENTLY LOCKED until maturity
-• Standard unstaking is NOT available
-• Only Emergency End Stake (EES) option exists:
-  - Claim % of tokens based on time completed
-  - Unclaimed tokens LOCKED FOREVER
-  - You FORFEIT all ETH rewards
-  - BUT you can still earn NEW ETH as position stays active
-  - Your locked tokens = permanent burn with yield
-
-Weight: ${tierInfo?.weight}
-Bucket Share: ${tierInfo?.share}
-
-Type "LOCK" to confirm you understand this is permanent.`;
-
-    const userInput = prompt(confirmMessage);
-    
-    if (userInput === 'LOCK') {
-      alert(`✅ Successfully locked ${amount} ${lockType} for ${selectedTier} days!\n\nYour position is now active and earning from the long-term bucket.`);
+  const confirmLock = async () => {
+    setShowLockModal(false);
+    setActionLoading(true);
+    try {
+      if (commitMode === 'all') {
+        // Use All function - splits across all tiers
+        if (lockType === 'DXN') {
+          await addDXNAllToLTS(amount);
+        } else {
+          await addGOLDAllToLTS(amount);
+        }
+        alert(`✅ Successfully committed ${amount} ${lockType} across ALL tiers in Crucible ${currentCrucible}!`);
+      } else {
+        // Single tier
+        if (lockType === 'DXN') {
+          await addDXNToLTS(amount, selectedTier);
+        } else {
+          await addGOLDToLTS(amount, selectedTier);
+        }
+        alert(`✅ Successfully committed ${amount} ${lockType} to ${TIERS[selectedTier].days}d tier in Crucible ${currentCrucible}!`);
+      }
       setAmount('');
-    } else if (userInput !== null) {
-      alert('❌ Lock cancelled. You must type "LOCK" to confirm.');
+    } catch (err) {
+      console.error('Lock failed:', err);
+      alert(`❌ Failed to lock: ${err.reason || err.message}`);
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleClaim = (position) => {
-    alert(`Mock: Claiming ${position.claimable} from ${position.tier} position`);
+  const handleMintNFTs = async () => {
+    setActionLoading(true);
+    try {
+      await mintLTSNFTs();
+      alert('✅ NFTs minted successfully! Your positions are now tradeable.');
+    } catch (err) {
+      console.error('Mint failed:', err);
+      alert(`❌ Failed to mint NFTs: ${err.reason || err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
   };
+
+  const handleClaim = async (nft) => {
+    if (!nft.isMature) {
+      alert('This position is not mature yet.');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      await claimLTS(nft.tokenId);
+      alert(`✅ Claimed ${nft.amount} ${nft.assetSymbol} + ${nft.claimableEth} ETH!`);
+    } catch (err) {
+      console.error('Claim failed:', err);
+      alert(`❌ Failed to claim: ${err.reason || err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleStartNewCrucible = async () => {
+    setActionLoading(true);
+    try {
+      await startNewCrucible();
+      alert(`✅ Crucible ${currentCrucible + 1} started! New deposit window is now open.`);
+    } catch (err) {
+      console.error('Start crucible failed:', err);
+      alert(`❌ Failed to start new crucible: ${err.reason || err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const lockWarnings = [
+    'Once the deposit window closes, your tokens are PERMANENTLY LOCKED until maturity',
+    'There is NO early withdrawal option',
+    'If you need liquidity, you can TRADE your NFT position on secondary markets',
+    'Your locked tokens still earn NORMAL staking rewards (tickets for DXN, ETH for GOLD)',
+    'PLUS you earn from the exclusive 3.12% LTS ETH bucket upon maturity',
+  ];
+
+  const lockDetails = [
+    { label: 'Crucible', value: `Crucible ${currentCrucible}` },
+    { label: 'Amount', value: `${amount} ${lockType}` },
+    { label: 'Lock Period', value: commitMode === 'all' ? 'All Tiers (1000-5000 days)' : `${TIERS[selectedTier].days} days (${(TIERS[selectedTier].days / 365).toFixed(1)} years)` },
+    { label: 'Distribution', value: commitMode === 'all' ? 'Split evenly across 5 tiers' : `Tier ${selectedTier + 1} only` },
+  ];
+
+  const windowStatus = getWindowStatus();
+
+  if (loading) {
+    return (
+      <div className="longterm-page">
+        <div className="loading-container">
+          <Loader className="spinner" size={48} />
+          <p>Loading LTS data...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="longterm-page">
       {/* Hero Section */}
       <div className="longterm-hero">
         <h1><Gem size={48} style={{display: 'inline', marginBottom: '-8px', marginRight: '12px'}} /> Long-Term Staking</h1>
+        <p className="hero-tagline">"Enter the Crucible to Steel Your Mettle"</p>
         <p>Lock DXN or GOLD for 1000-5000 days and earn from exclusive ETH pools</p>
-        <div className="window-status closed">
-          <Clock size={18} style={{display: 'inline', marginRight: '6px'}} /> Deposit Window: <strong>Opens Epoch 26, Closes Epoch 51</strong>
+        
+        {/* Crucible Badge */}
+        <div className="crucible-badge">
+          <Flame size={20} /> Crucible {currentCrucible}
+        </div>
+        
+        <div className={`window-status ${windowStatus.status}`}>
+          <Clock size={18} style={{display: 'inline', marginRight: '6px'}} /> 
+          Deposit Window: <strong>{windowStatus.text}</strong>
         </div>
       </div>
+
+      {/* Navigation */}
+      <NavAccordion currentPage="longterm" onNavigate={onNavigate} />
+
+      {/* Start New Crucible Button */}
+      {canStartNewCrucible && (
+        <div className="start-crucible-section">
+          <div className="start-crucible-card">
+            <Flame size={32} className="flame-icon" />
+            <h3>🔥 Crucible {currentCrucible} Complete!</h3>
+            <p>Tier 5 has matured. Start Crucible {currentCrucible + 1} to open a new 99-day deposit window.</p>
+            <button 
+              className="start-crucible-btn"
+              onClick={handleStartNewCrucible}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <><Loader className="spinner-inline" size={18} /> Starting...</>
+              ) : (
+                <>🔥 Start Crucible {currentCrucible + 1}</>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Critical Warning Banner */}
       <div className="critical-warning-banner">
@@ -90,23 +245,23 @@ Type "LOCK" to confirm you understand this is permanent.`;
         <div className="warning-content">
           <h3>PERMANENT LOCK COMMITMENT</h3>
           <p>
-            Once the deposit window <strong>closes at Epoch 51</strong>, all staked tokens are <strong>PERMANENTLY LOCKED</strong> until their maturity date. 
-            Standard unstaking is NOT possible. Only Emergency End Stake (EES) is available - see details below.
+            Once the deposit window <strong>closes at Day {crucibleInfo.end}</strong>, all committed tokens are <strong>PERMANENTLY LOCKED</strong> until their maturity date. 
+            There is NO early withdrawal. Your positions become tradeable NFTs — if you need liquidity, sell your NFT on secondary markets.
           </p>
         </div>
       </div>
 
-      {/* Protocol Stats - Public View */}
+      {/* Protocol Stats */}
       <div className="protocol-stats-section">
-        <h3><BarChart3 size={24} style={{display: 'inline', marginRight: '8px', marginBottom: '-4px'}} /> Protocol Statistics</h3>
+        <h3><BarChart3 size={24} style={{display: 'inline', marginRight: '8px', marginBottom: '-4px'}} /> Crucible {currentCrucible} Statistics</h3>
         
         <div className="main-stats-grid">
           <div className="stat-card total">
             <Lock size={42} className="stat-icon" />
             <div className="stat-content">
               <div className="stat-label">Total DXN Locked</div>
-              <div className="stat-value">24,583</div>
-              <div className="stat-sublabel">Permanently committed</div>
+              <div className="stat-value">{totalDXNLocked.toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
+              <div className="stat-sublabel">Crucible {currentCrucible}</div>
             </div>
           </div>
 
@@ -114,17 +269,26 @@ Type "LOCK" to confirm you understand this is permanent.`;
             <Trophy size={42} className="stat-icon" />
             <div className="stat-content">
               <div className="stat-label">Total GOLD Locked</div>
-              <div className="stat-value">8,429</div>
-              <div className="stat-sublabel">Permanently committed</div>
+              <div className="stat-value">{totalGOLDLocked.toLocaleString(undefined, {maximumFractionDigits: 2})}</div>
+              <div className="stat-sublabel">Crucible {currentCrucible}</div>
             </div>
           </div>
 
           <div className="stat-card total">
             <Coins size={42} className="stat-icon" />
             <div className="stat-content">
-              <div className="stat-label">ETH Bucket Balance</div>
-              <div className="stat-value highlight">12.4567 ETH</div>
-              <div className="stat-sublabel">Growing daily</div>
+              <div className="stat-label">LTS ETH Bucket</div>
+              <div className="stat-value highlight">{parseFloat(ltsEthBucket).toFixed(8)} ETH</div>
+              <div className="stat-sublabel">3.12% of all fees</div>
+            </div>
+          </div>
+
+          <div className="stat-card total">
+            <Clock size={42} className="stat-icon" />
+            <div className="stat-content">
+              <div className="stat-label">Current Cycle</div>
+              <div className="stat-value">{currentCycle}</div>
+              <div className="stat-sublabel">Day {currentCycle}</div>
             </div>
           </div>
         </div>
@@ -133,125 +297,43 @@ Type "LOCK" to confirm you understand this is permanent.`;
         <div className="tier-breakdown">
           <h4>Breakdown by Tier</h4>
           <div className="tier-stats-grid">
-            {/* 1000d Tier */}
-            <div className="tier-stat-card">
-              <div className="tier-stat-header">
-                <span className="tier-badge-stat">1000d</span>
-                <span className="tier-weight-stat">1x</span>
-                <span className="tier-share-stat">5%</span>
-              </div>
-              <div className="tier-stat-row">
-                <span className="tier-stat-label">DXN Locked:</span>
-                <span className="tier-stat-value">2,450</span>
-              </div>
-              <div className="tier-stat-row">
-                <span className="tier-stat-label">GOLD Locked:</span>
-                <span className="tier-stat-value">890</span>
-              </div>
-              <div className="tier-stat-row claimable">
-                <span className="tier-stat-label">ETH Claimable:</span>
-                <span className="tier-stat-value">0.6228 ETH</span>
-              </div>
-            </div>
-
-            {/* 2000d Tier */}
-            <div className="tier-stat-card">
-              <div className="tier-stat-header">
-                <span className="tier-badge-stat">2000d</span>
-                <span className="tier-weight-stat">2x</span>
-                <span className="tier-share-stat">10%</span>
-              </div>
-              <div className="tier-stat-row">
-                <span className="tier-stat-label">DXN Locked:</span>
-                <span className="tier-stat-value">3,890</span>
-              </div>
-              <div className="tier-stat-row">
-                <span className="tier-stat-label">GOLD Locked:</span>
-                <span className="tier-stat-value">1,240</span>
-              </div>
-              <div className="tier-stat-row claimable">
-                <span className="tier-stat-label">ETH Claimable:</span>
-                <span className="tier-stat-value">1.2457 ETH</span>
-              </div>
-            </div>
-
-            {/* 3000d Tier */}
-            <div className="tier-stat-card">
-              <div className="tier-stat-header">
-                <span className="tier-badge-stat">3000d</span>
-                <span className="tier-weight-stat">3x</span>
-                <span className="tier-share-stat">15%</span>
-              </div>
-              <div className="tier-stat-row">
-                <span className="tier-stat-label">DXN Locked:</span>
-                <span className="tier-stat-value">5,670</span>
-              </div>
-              <div className="tier-stat-row">
-                <span className="tier-stat-label">GOLD Locked:</span>
-                <span className="tier-stat-value">1,890</span>
-              </div>
-              <div className="tier-stat-row claimable">
-                <span className="tier-stat-label">ETH Claimable:</span>
-                <span className="tier-stat-value">1.8685 ETH</span>
-              </div>
-            </div>
-
-            {/* 4000d Tier */}
-            <div className="tier-stat-card">
-              <div className="tier-stat-header">
-                <span className="tier-badge-stat">4000d</span>
-                <span className="tier-weight-stat">4x</span>
-                <span className="tier-share-stat">20%</span>
-              </div>
-              <div className="tier-stat-row">
-                <span className="tier-stat-label">DXN Locked:</span>
-                <span className="tier-stat-value">6,230</span>
-              </div>
-              <div className="tier-stat-row">
-                <span className="tier-stat-label">GOLD Locked:</span>
-                <span className="tier-stat-value">2,100</span>
-              </div>
-              <div className="tier-stat-row claimable">
-                <span className="tier-stat-label">ETH Claimable:</span>
-                <span className="tier-stat-value">2.4913 ETH</span>
-              </div>
-            </div>
-
-            {/* 5000d Tier */}
-            <div className="tier-stat-card highlight">
-              <div className="tier-stat-header">
-                <span className="tier-badge-stat">5000d</span>
-                <span className="tier-weight-stat">5x</span>
-                <span className="tier-share-stat">50%</span>
-              </div>
-              <div className="tier-stat-row">
-                <span className="tier-stat-label">DXN Locked:</span>
-                <span className="tier-stat-value">6,343</span>
-              </div>
-              <div className="tier-stat-row">
-                <span className="tier-stat-label">GOLD Locked:</span>
-                <span className="tier-stat-value">2,309</span>
-              </div>
-              <div className="tier-stat-row claimable">
-                <span className="tier-stat-label">ETH Claimable:</span>
-                <span className="tier-stat-value">6.2284 ETH</span>
-              </div>
-            </div>
+            {tiers.map((tier, index) => {
+              const dxnLocked = totalDXNByTier[index] || 0;
+              const goldLocked = totalGOLDByTier[index] || 0;
+              const tierEth = getTierEthAllocation(index);
+              const snapshot = tierSnapshots[index];
+              
+              return (
+                <div key={tier.days} className={`tier-stat-card ${index === 4 ? 'highlight' : ''}`}>
+                  <div className="tier-stat-header">
+                    <span className="tier-badge-stat">Tier {index + 1}</span>
+                    <span className="tier-weight-stat">{tier.weight}</span>
+                    <span className="tier-share-stat">{tier.share}</span>
+                  </div>
+                  <div className="tier-stat-row">
+                    <span className="tier-stat-label">{tier.days} days</span>
+                  </div>
+                  <div className="tier-stat-row">
+                    <span className="tier-stat-label">DXN Locked:</span>
+                    <span className="tier-stat-value">{dxnLocked.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="tier-stat-row">
+                    <span className="tier-stat-label">GOLD Locked:</span>
+                    <span className="tier-stat-value">{goldLocked.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+                  </div>
+                  <div className="tier-stat-row claimable">
+                    <span className="tier-stat-label">ETH Allocation:</span>
+                    <span className="tier-stat-value">{tierEth} ETH</span>
+                  </div>
+                  {snapshot?.isMature && (
+                    <div className="tier-mature-badge">
+                      <CheckCircle size={12} /> MATURE
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
-        </div>
-      </div>
-
-      {/* Bucket Info */}
-      <div className="bucket-info-card">
-        <h3><DollarSign size={22} style={{display: 'inline', marginRight: '6px', marginBottom: '-4px'}} /> Long-Term Bucket Sources</h3>
-        <div className="bucket-sources">
-          <div className="source-item"><CheckCircle size={16} style={{display: 'inline', marginRight: '6px'}} /> 1% from DXN staking fees</div>
-          <div className="source-item"><CheckCircle size={16} style={{display: 'inline', marginRight: '6px'}} /> [X]% from GOLD staking fees</div>
-          <div className="source-item"><CheckCircle size={16} style={{display: 'inline', marginRight: '6px'}} /> Future protocols (unlimited upside!)</div>
-          <div className="source-item"><CheckCircle size={16} style={{display: 'inline', marginRight: '6px'}} /> Direct ETH donations welcome</div>
-        </div>
-        <div className="bucket-note">
-          <TrendingUp size={16} style={{display: 'inline', marginRight: '6px'}} /> <strong>No cap on contributions!</strong> The dev's imagination is the limit. All donated ETH flows to long-term stakers.
         </div>
       </div>
 
@@ -259,13 +341,14 @@ Type "LOCK" to confirm you understand this is permanent.`;
       <div className="tier-selector-card">
         <h3>Choose Your Lock Period</h3>
         <div className="tiers-grid">
-          {tiers.map(tier => (
+          {tiers.map((tier, index) => (
             <button
               key={tier.days}
-              className={`tier-btn ${selectedTier === tier.days ? 'selected' : ''}`}
-              onClick={() => setSelectedTier(tier.days)}
+              className={`tier-btn ${selectedTier === index ? 'selected' : ''}`}
+              onClick={() => setSelectedTier(index)}
             >
-              <div className="tier-days">{tier.days}d</div>
+              <div className="tier-days">Tier {index + 1}</div>
+              <div className="tier-label">{tier.label}</div>
               <div className="tier-weight">{tier.weight}</div>
               <div className="tier-share">{tier.share}</div>
             </button>
@@ -275,20 +358,25 @@ Type "LOCK" to confirm you understand this is permanent.`;
         <div className="tier-info">
           <div className="tier-info-item">
             <span className="info-label">Selected Period</span>
-            <span className="info-value">{selectedTier} days ({(selectedTier / 365).toFixed(1)} years)</span>
+            <span className="info-value">{TIERS[selectedTier].days} days ({(TIERS[selectedTier].days / 365).toFixed(1)} years)</span>
           </div>
           <div className="tier-info-item">
             <span className="info-label">Your Weight</span>
-            <span className="info-value">{tiers.find(t => t.days === selectedTier)?.weight}</span>
+            <span className="info-value">{TIERS[selectedTier].weight}x</span>
           </div>
           <div className="tier-info-item">
-            <span className="info-label">Bucket Share</span>
-            <span className="info-value">{tiers.find(t => t.days === selectedTier)?.share}</span>
+            <span className="info-label">Tier Share</span>
+            <span className="info-value">{((TIERS[selectedTier].weight / 15) * 100).toFixed(1)}%</span>
+          </div>
+          <div className="tier-info-item">
+            <span className="info-label">Maturity Cycle</span>
+            <span className="info-value">Day {crucibleInfo.lock + TIERS[selectedTier].days}</span>
           </div>
         </div>
 
         <div className="permanent-warning">
-          <AlertTriangle size={16} style={{display: 'inline', marginRight: '6px'}} /> <strong>PERMANENT LOCK:</strong> Your tokens are locked until maturity. Cannot be withdrawn early.
+          <AlertTriangle size={16} style={{display: 'inline', marginRight: '6px'}} /> 
+          <strong>PERMANENT LOCK:</strong> Tokens cannot be withdrawn until maturity. Trade your NFT if you need liquidity.
         </div>
       </div>
 
@@ -296,8 +384,8 @@ Type "LOCK" to confirm you understand this is permanent.`;
       <div className="lock-interface">
         <div className="lock-card">
           <div className="lock-header">
-            <h3>Lock Your Tokens</h3>
-            <div className="lock-type-toggle">
+            <h3>Commit Tokens to Crucible {currentCrucible}</h3>
+            <div className={`lock-type-toggle ${lockType === 'GOLD' ? 'gold-mode' : ''}`}>
               <button 
                 className={`toggle-btn ${lockType === 'DXN' ? 'active' : ''}`}
                 onClick={() => setLockType('DXN')}
@@ -305,7 +393,7 @@ Type "LOCK" to confirm you understand this is permanent.`;
                 DXN
               </button>
               <button 
-                className={`toggle-btn ${lockType === 'GOLD' ? 'active' : ''}`}
+                className={`toggle-btn ${lockType === 'GOLD' ? 'active gold' : ''}`}
                 onClick={() => setLockType('GOLD')}
               >
                 GOLD
@@ -313,308 +401,297 @@ Type "LOCK" to confirm you understand this is permanent.`;
             </div>
           </div>
 
+          {/* Wallet balance for selected token */}
+          <div className="token-balance-box">
+            Your {lockType} Balance: <strong>{userBalances[lockType].toLocaleString(undefined, {maximumFractionDigits: 4})} {lockType}</strong>
+          </div>
+
           <div className="input-section">
-            <label>Amount to Lock</label>
+            <label>Amount</label>
             <div className="input-wrapper">
               <input
                 type="number"
                 placeholder="0.0"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
+                disabled={actionLoading}
               />
               <button 
                 className="max-btn"
-                onClick={() => setAmount(userBalances[lockType])}
+                onClick={() => setAmount(userBalances[lockType].toString())}
+                disabled={actionLoading}
               >
                 MAX
               </button>
             </div>
-            <div className="balance-display">
-              Balance: {userBalances[lockType].toLocaleString()} {lockType}
-            </div>
           </div>
 
-          <button className="lock-submit-btn" onClick={handleLock}>
-            🔐 Lock {lockType} for {selectedTier} Days
-          </button>
+          {/* Two Commit Buttons */}
+          <div className="commit-buttons">
+            <button 
+              className={`lock-submit-btn ${lockType === 'GOLD' ? 'gold-btn' : ''} ${!canDeposit ? 'disabled-look' : ''}`}
+              onClick={() => handleLock('single')}
+              disabled={actionLoading || !amount || Number(amount) <= 0}
+            >
+              {actionLoading ? (
+                <><Loader className="spinner-inline" size={18} /> Processing...</>
+              ) : (
+                <>🔐 Commit {lockType} to Tier {selectedTier + 1} {!canDeposit && '(Window Closed)'}</>
+              )}
+            </button>
+
+            <button 
+              className={`lock-submit-btn all-tiers-btn ${lockType === 'GOLD' ? 'gold-btn' : ''} ${!canDeposit ? 'disabled-look' : ''}`}
+              onClick={() => handleLock('all')}
+              disabled={actionLoading || !amount || Number(amount) <= 0}
+            >
+              {actionLoading ? (
+                <><Loader className="spinner-inline" size={18} /> Processing...</>
+              ) : (
+                <>🔥 Commit {lockType} to ALL Tiers {!canDeposit && '(Window Closed)'}</>
+              )}
+            </button>
+            <div className="all-tiers-hint">
+              Splits your {lockType} evenly across all 5 tiers in one transaction
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Your Stakes Section */}
-      <div className="your-stakes-section">
-        <h3><Lock size={28} style={{display: 'inline', marginRight: '10px', marginBottom: '-6px'}} /> Your Stakes</h3>
-        
-        <div className="your-stakes-grid">
-          {/* 1000d Tier */}
-          <div className="your-stake-card">
-            <div className="your-stake-header">
-              <span className="your-stake-tier">1000d</span>
-              <span className="your-stake-weight">1x Weight</span>
-            </div>
-            <div className="your-stake-amounts">
-              <div className="your-stake-row">
-                <span className="your-stake-label">DXN Locked:</span>
-                <span className="your-stake-value">250</span>
-              </div>
-              <div className="your-stake-row">
-                <span className="your-stake-label">GOLD Locked:</span>
-                <span className="your-stake-value">0</span>
-              </div>
-              <div className="your-stake-row maturity">
-                <span className="your-stake-label">Maturity:</span>
-                <span className="your-stake-value">2028-01-15</span>
-              </div>
-            </div>
-          </div>
 
-          {/* 2000d Tier */}
-          <div className="your-stake-card">
-            <div className="your-stake-header">
-              <span className="your-stake-tier">2000d</span>
-              <span className="your-stake-weight">2x Weight</span>
+      {/* Mint NFTs Section */}
+      {windowClosed && hasPendingToMint && (
+        <div className="mint-nfts-section">
+          <div className="mint-card">
+            <h3>🎉 Mint Your Crucible {currentCrucible} NFTs</h3>
+            <p>The deposit window has closed. Mint your positions as NFTs to enable trading and claiming.</p>
+            <div className="pending-summary">
+              {userTotalDXN > 0 && <span>DXN Committed: {userTotalDXN.toLocaleString()}</span>}
+              {userTotalGOLD > 0 && <span>GOLD Committed: {userTotalGOLD.toLocaleString()}</span>}
             </div>
-            <div className="your-stake-amounts">
-              <div className="your-stake-row">
-                <span className="your-stake-label">DXN Locked:</span>
-                <span className="your-stake-value">0</span>
-              </div>
-              <div className="your-stake-row">
-                <span className="your-stake-label">GOLD Locked:</span>
-                <span className="your-stake-value">100</span>
-              </div>
-              <div className="your-stake-row maturity">
-                <span className="your-stake-label">Maturity:</span>
-                <span className="your-stake-value">2031-06-20</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 3000d Tier */}
-          <div className="your-stake-card">
-            <div className="your-stake-header">
-              <span className="your-stake-tier">3000d</span>
-              <span className="your-stake-weight">3x Weight</span>
-            </div>
-            <div className="your-stake-amounts">
-              <div className="your-stake-row">
-                <span className="your-stake-label">DXN Locked:</span>
-                <span className="your-stake-value">500</span>
-              </div>
-              <div className="your-stake-row">
-                <span className="your-stake-label">GOLD Locked:</span>
-                <span className="your-stake-value">75</span>
-              </div>
-              <div className="your-stake-row maturity">
-                <span className="your-stake-label">Maturity:</span>
-                <span className="your-stake-value">2033-01-20</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 4000d Tier */}
-          <div className="your-stake-card">
-            <div className="your-stake-header">
-              <span className="your-stake-tier">4000d</span>
-              <span className="your-stake-weight">4x Weight</span>
-            </div>
-            <div className="your-stake-amounts">
-              <div className="your-stake-row">
-                <span className="your-stake-label">DXN Locked:</span>
-                <span className="your-stake-value">0</span>
-              </div>
-              <div className="your-stake-row">
-                <span className="your-stake-label">GOLD Locked:</span>
-                <span className="your-stake-value">0</span>
-              </div>
-              <div className="your-stake-row maturity">
-                <span className="your-stake-label">Maturity:</span>
-                <span className="your-stake-value">—</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 5000d Tier */}
-          <div className="your-stake-card highlight">
-            <div className="your-stake-header">
-              <span className="your-stake-tier">5000d</span>
-              <span className="your-stake-weight">5x Weight</span>
-            </div>
-            <div className="your-stake-amounts">
-              <div className="your-stake-row">
-                <span className="your-stake-label">DXN Locked:</span>
-                <span className="your-stake-value">1,000</span>
-              </div>
-              <div className="your-stake-row">
-                <span className="your-stake-label">GOLD Locked:</span>
-                <span className="your-stake-value">250</span>
-              </div>
-              <div className="your-stake-row maturity">
-                <span className="your-stake-label">Maturity:</span>
-                <span className="your-stake-value">2038-06-15</span>
-              </div>
-            </div>
+            <button 
+              className="mint-btn"
+              onClick={handleMintNFTs}
+              disabled={actionLoading}
+            >
+              {actionLoading ? (
+                <><Loader className="spinner-inline" size={18} /> Minting...</>
+              ) : (
+                <>✨ Mint My NFTs</>
+              )}
+            </button>
           </div>
         </div>
+      )}
 
-        <div className="your-stakes-summary">
-          <div className="summary-item">
-            <span className="summary-label">Total DXN Locked:</span>
-            <span className="summary-value">1,750</span>
+      {/* Your Active Positions (Pending Deposits) */}
+      <div className="positions-card">
+        <h3><Lock size={24} style={{display: 'inline', marginRight: '10px', marginBottom: '-4px'}} /> Your Active Positions</h3>
+        
+        {!account ? (
+          <div className="no-positions">
+            <p>Connect your wallet to view your positions.</p>
           </div>
-          <div className="summary-item">
-            <span className="summary-label">Total GOLD Locked:</span>
-            <span className="summary-value">425</span>
+        ) : windowClosed && userHasMinted ? (
+          <div className="no-positions">
+            <p>✅ Your positions have been transformed into NFTs! See "Your NFTs" below.</p>
+            <p className="subtext">New positions will be available when Crucible {currentCrucible + 1} opens.</p>
           </div>
-          <div className="summary-item highlight">
-            <span className="summary-label">Total Claimable ETH:</span>
-            <span className="summary-value">2.4583 ETH</span>
+        ) : windowClosed && hasPendingToMint ? (
+          <div className="no-positions">
+            <p>⏳ Window closed! Mint your NFTs above to view them.</p>
+          </div>
+        ) : isWindowOpen ? (
+          <div className="no-positions">
+            <p>Commit DXN or GOLD above to create LTS positions. NFTs will be minted when the window closes.</p>
+            {(userTotalDXN > 0 || userTotalGOLD > 0) && (
+              <div className="pending-preview">
+                <h4>Your Pending Commitments (Crucible {currentCrucible}):</h4>
+                <div className="pending-grid">
+                  {TIERS.map((tier, idx) => {
+                    const dxn = userPendingDXN[idx];
+                    const gold = userPendingGOLD[idx];
+                    if (dxn === 0 && gold === 0) return null;
+                    return (
+                      <div key={tier.days} className="pending-item">
+                        <span className="pending-tier">Tier {idx + 1} ({tier.label})</span>
+                        {dxn > 0 && <span>{dxn.toLocaleString()} DXN</span>}
+                        {gold > 0 && <span>{gold.toLocaleString()} GOLD</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="no-positions">
+            <p>The deposit window is closed. {canStartNewCrucible ? 'Start a new Crucible to participate!' : `Wait for Crucible ${currentCrucible + 1} to open.`}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Your NFTs Section */}
+      {userNFTs.length > 0 && (
+        <div className="nfts-section">
+          <h3><Gem size={24} style={{display: 'inline', marginRight: '10px', marginBottom: '-4px'}} /> Your Crucible NFTs</h3>
+          <div className="nfts-grid">
+            {userNFTs.map((nft) => (
+              <div key={nft.tokenId} className={`nft-card ${nft.assetSymbol.toLowerCase()} ${nft.isMature ? 'mature' : ''}`}>
+                {/* NFT Art Placeholder */}
+                <div className={`nft-art tier-${nft.tier}`}>
+                  <div className="nft-art-inner">
+                    <Gem size={48} className="nft-gem-icon" />
+                    <div className="nft-art-tier">Tier {Number(nft.tier) + 1}</div>
+                    <div className="nft-art-asset">{nft.assetSymbol}</div>
+                  </div>
+                  {nft.isMature && <div className="mature-ribbon">READY</div>}
+                </div>
+                
+                {/* NFT Details */}
+                <div className="nft-details">
+                  <div className="nft-header">
+                    <span className="nft-id">#{nft.tokenId}</span>
+                    <span className="nft-crucible">Crucible {nft.crucible}</span>
+                  </div>
+                  
+                  <div className="nft-amount">
+                    {parseFloat(nft.amount).toLocaleString(undefined, {maximumFractionDigits: 2})} {nft.assetSymbol}
+                  </div>
+                  
+                  <div className="nft-info-row">
+                    <span className="nft-label">Lock Period:</span>
+                    <span className="nft-value">{nft.tierLabel}</span>
+                  </div>
+                  
+                  <div className="nft-info-row">
+                    <span className="nft-label">Maturity:</span>
+                    <span className={`nft-value ${nft.isMature ? 'mature-text' : ''}`}>
+                      {nft.isMature ? '✅ READY' : `Day ${nft.unlockCycle}`}
+                    </span>
+                  </div>
+                  
+                  {!nft.isMature && (
+                    <div className="nft-info-row">
+                      <span className="nft-label">Remaining:</span>
+                      <span className="nft-value">{nft.daysRemaining} days</span>
+                    </div>
+                  )}
+                  
+                  <div className="nft-info-row eth-row">
+                    <span className="nft-label">ETH Share:</span>
+                    <span className="nft-value eth-value">{parseFloat(nft.claimableEth).toFixed(6)} ETH</span>
+                  </div>
+                  
+                  <button 
+                    className={`nft-claim-btn ${nft.isMature ? 'ready' : 'locked'}`}
+                    onClick={() => handleClaim(nft)}
+                    disabled={!nft.isMature || actionLoading}
+                  >
+                    {nft.isMature ? (
+                      <><CheckCircle size={16} /> Claim All</>
+                    ) : (
+                      <><Lock size={16} /> Locked</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* NFT Trading Info */}
+      <div className="nft-trading-info">
+        <h4>💎 NFT Liquidity</h4>
+        <div className="nft-info-content">
+          <p>
+            Need liquidity before maturity? <strong>Sell your NFT!</strong> Your LTS position is a standard ERC-721 token 
+            tradeable on any NFT marketplace. The buyer inherits all rights: the locked tokens, the staking rewards, 
+            and the LTS ETH claim at maturity.
+          </p>
+          <div className="marketplace-links">
+            <a href="https://testnets.opensea.io" target="_blank" rel="noopener noreferrer">
+              <ExternalLink size={14} /> OpenSea (Testnet)
+            </a>
           </div>
         </div>
       </div>
 
       {/* How It Works Section */}
       <div className="how-it-works-section">
-        <h3><CheckCircle size={28} style={{display: 'inline', marginRight: '10px', marginBottom: '-6px'}} /> How Long-Term Staking (LTS) Works</h3>
+        <h3><CheckCircle size={28} style={{display: 'inline', marginRight: '10px', marginBottom: '-6px'}} /> How Long-Term Staking Works</h3>
         
         <div className="works-grid">
           <div className="works-card">
             <div className="works-number">1</div>
-            <h4>Deposit Window</h4>
+            <h4>Deposit Window (99 days)</h4>
             <p>
-              <strong>Epochs 26-51:</strong> Deposit window is OPEN. You can lock DXN or GOLD into any tier (1000d-5000d). 
-              During this period, you can still add more to your position, but you CANNOT remove tokens.  This is for fairness so all users can see the total amount of tokens committed.
+              <strong>Days 1-99 of each Crucible:</strong> Commit your staked DXN or GOLD to any tier (1000d-5000d). 
+              You can add more anytime during this window, but commitments are FINAL and cannot be removed.
             </p>
           </div>
 
           <div className="works-card">
             <div className="works-number">2</div>
-            <h4>Window Closes</h4>
+            <h4>Window Closes → NFT Mint</h4>
             <p>
-              <strong>After Epoch 51:</strong> Deposit window CLOSES permanently. All positions are now LOCKED until their individual maturity dates. 
-              No new deposits possible. No standard unstaking available.
+              <strong>Day 100:</strong> The window closes. Mint your positions as NFTs. 
+              Each position becomes a tradeable ERC-721 token you can sell on OpenSea, Blur, etc.
             </p>
           </div>
 
           <div className="works-card">
             <div className="works-number">3</div>
-            <h4>Normal Benefits STILL Apply!</h4>
+            <h4>Earn Double Rewards</h4>
             <p>
-              <strong>LTS DXN:</strong> Still earns tickets every epoch → GOLD (auto-staked & claimable).
-              <br/><strong>LTS GOLD:</strong> Still earns 90% ETH fees (claimable anytime).
+              <strong>LTS DXN:</strong> Still earns tickets → GOLD every epoch.
+              <br/><strong>LTS GOLD:</strong> Still earns 88% ETH fees.
               <br/><br/>
-              Long-term staking does NOT remove these benefits—it ADDS the LTS bucket rewards on top!
+              <strong>PLUS:</strong> Earn from the exclusive 3.12% LTS ETH bucket based on your tier weight!
             </p>
           </div>
 
           <div className="works-card">
             <div className="works-number">4</div>
-            <h4>BONUS: LTS Bucket Rewards</h4>
+            <h4>Maturity & Claim</h4>
             <p>
-              Your locked position earns from the exclusive long-term bucket based on your tier weight. 
-              This is EXTRA ETH on top of normal rewards. The longer your tier, the larger your share (1x-5x multiplier).
+              When your tier matures (1000-5000 days), claim your full position: 
+              all your DXN/GOLD <strong>plus</strong> your share of the LTS ETH bucket.
+              Claiming burns the NFT — one sweep, everything to your wallet.
             </p>
           </div>
 
           <div className="works-card">
             <div className="works-number">5</div>
-            <h4>Maturity & Claim</h4>
+            <h4>Infinite Crucibles</h4>
             <p>
-              Once your lock period completes, you can claim 100% of your DXN/GOLD plus all accumulated ETH rewards. 
-              Until then, only ETH is claimable - your tokens remain locked.
+              After Tier 5 matures (Day 5100), anyone can start <strong>Crucible 2</strong>. 
+              New 99-day window opens. Unclaimed ETH from Crucible 1 rolls over. 
+              This continues forever — Crucible 3, 4, 5...
             </p>
           </div>
         </div>
+      </div>
 
-        {/* EES Section */}
-        <div className="ees-explainer">
-          <h4>⚡ Emergency End Stake (EES)</h4>
-          <div className="ees-content">
-            <div className="ees-warning">
-              <strong>Use only in emergencies!</strong> EES allows early exit but with severe penalties:
-            </div>
-            
-            <div className="ees-rules">
-              <div className="ees-rule">
-                <span className="rule-icon">📊</span>
-                <div>
-                  <strong>Partial Token Recovery:</strong> You can only claim the % of tokens equal to % of time completed. 
-                  Example: Complete 10% of 5000 days? Claim only 10% of your tokens.
-                </div>
-              </div>
-              
-              <div className="ees-rule">
-                <span className="rule-icon">🔒</span>
-                <div>
-                  <strong>Tokens Locked Forever:</strong> The unclaimed % of tokens (e.g., remaining 90%) is permanently locked in the contract. 
-                  Essentially burned, never retrievable.
-                </div>
-              </div>
-              
-              <div className="ees-rule">
-                <span className="rule-icon">❌</span>
-                <div>
-                  <strong>Forfeit All ETH Rewards:</strong> You lose ALL accumulated and future ETH rewards from your position. 
-                  This includes everything you've earned but haven't claimed yet.
-                </div>
-              </div>
-              
-              <div className="ees-rule">
-                <span className="rule-icon">💰</span>
-                <div>
-                  <strong>BUT You Keep Earning:</strong> Your locked position stays active! The forever-locked tokens continue earning NEW ETH 
-                  from the long-term bucket. You can claim this new ETH, but your tokens are gone forever.
-                </div>
-              </div>
-            </div>
+      {/* Lock Confirmation Modal */}
+      <ConfirmModal
+        isOpen={showLockModal}
+        onClose={() => setShowLockModal(false)}
+        onConfirm={confirmLock}
+        title={`CONFIRM CRUCIBLE ${currentCrucible} COMMITMENT`}
+        warnings={lockWarnings}
+        details={lockDetails}
+        confirmWord="LOCK"
+      />
 
-            <div className="ees-example">
-              <strong>Example:</strong> You lock 1000 DXN for 5000 days. After 500 days (10% complete), you EES:
-              <ul>
-                <li>✅ Claim: 100 DXN (10%)</li>
-                <li>🔒 Locked Forever: 900 DXN (90%)</li>
-                <li>❌ Forfeit: All accumulated ETH rewards</li>
-                <li>💰 But: The 900 DXN position stays active, keeps earning NEW ETH for you to claim</li>
-              </ul>
-            </div>
-          </div>
+      {/* Loading Overlay */}
+      {actionLoading && (
+        <div className="loading-overlay">
+          <Loader className="spinner" size={48} />
+          <p>Processing transaction...</p>
         </div>
-      </div>
-
-      {/* Active Positions */}
-      <div className="positions-card">
-        <h3>Your Active Positions</h3>
-        {activePositions.length > 0 ? (
-          <div className="positions-table">
-            <div className="table-header">
-              <div>Tier</div>
-              <div>Amount</div>
-              <div>Maturity</div>
-              <div>Claimable ETH</div>
-              <div>Action</div>
-            </div>
-            {activePositions.map((position, index) => (
-              <div key={index} className="table-row">
-                <div className="tier-badge">{position.tier}</div>
-                <div>{position.amount}</div>
-                <div>{position.maturity}</div>
-                <div className="claimable-amount">{position.claimable}</div>
-                <div>
-                  <button 
-                    className="claim-btn"
-                    onClick={() => handleClaim(position)}
-                  >
-                    Claim
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="no-positions">
-            <p>No active positions yet. Lock your DXN or GOLD to get started!</p>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 }

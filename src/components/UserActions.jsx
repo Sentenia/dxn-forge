@@ -1,24 +1,52 @@
 import React, { useState } from 'react';
-import { TrendingUp, Unlock, Trophy, Gift, Coins } from 'lucide-react';
+import { TrendingUp, Unlock, Trophy, Gift, Coins, Ticket, RefreshCw } from 'lucide-react';
+import { ethers } from 'ethers';
+import { useWallet } from '../hooks/useWallet';
+import { useForgeData } from '../hooks/useForgeData';
+import { CONTRACTS, FORGE_ABI, ERC20_ABI } from '../contracts';
 
 function UserActions() {
+  const { address, connected } = useWallet();
+  const { user, protocol, refetch } = useForgeData();
+  
   // DXN staking state
-  const [dxnTab, setDxnTab] = useState('stake'); // 'stake' or 'unstake'
+  const [dxnTab, setDxnTab] = useState('stake');
   const [dxnAmount, setDxnAmount] = useState('');
+  const [dxnLoading, setDxnLoading] = useState(false);
   
   // GOLD staking state
   const [goldTab, setGoldTab] = useState('stake');
   const [goldAmount, setGoldAmount] = useState('');
+  const [goldLoading, setGoldLoading] = useState(false);
   
-  // Mock data
-  const userDxnBalance = 1000;
-  const userDxnStaked = 500;
-  const userGoldBalance = 250;
-  const userGoldStaked = 100;
-  const userGoldAutoStaked = 75.5; // Auto-staked from ticket allocations
-  const claimableGold = 127.35;
-  const claimableETH = 2.4567;
-  const currentEpoch = 7;
+  // Claim loading
+  const [claimLoading, setClaimLoading] = useState(false);
+  const [pokeLoading, setPokeLoading] = useState(false);
+
+  // Parse user data
+  const userDxnBalance = parseFloat(user.dxnBalance) || 0;
+  const userDxnStaked = parseFloat(user.dxnStaked) || 0;
+  const userDxnPending = parseFloat(user.dxnPending) || 0;
+  const userGoldBalance = parseFloat(user.goldBalance) || 0;
+  const userGoldStaked = parseFloat(user.manualGoldStaked) || 0;
+  const userGoldPending = parseFloat(user.manualGoldPending) || 0;
+  const userGoldAutoStaked = parseFloat(user.autoStakedGold) || 0;
+  const autoStakedGold = parseFloat(user.autoStakedGold) || 0;
+  const pendingGoldReward = parseFloat(user.pendingGoldReward) || 0;
+  const claimableETH = parseFloat(user.pendingEth) || 0;
+  const userTicketsFromStaking = parseFloat(user.pendingTickets) || 0;
+  const userTicketsFromBurns = parseFloat(user.totalTickets) || 0;
+  const userTotalTickets = userTicketsFromStaking + userTicketsFromBurns;
+
+  const formatNumber = (num) => {
+    return parseFloat(num).toLocaleString(undefined, { maximumFractionDigits: 4 });
+  };
+
+  // Get signer for transactions
+  const getSigner = async () => {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    return provider.getSigner();
+  };
 
   // DXN handlers
   const handleDxnMax = () => {
@@ -29,17 +57,42 @@ function UserActions() {
     }
   };
 
-  const handleDxnAction = () => {
-    if (!dxnAmount || Number(dxnAmount) <= 0) {
-      alert('Please enter a valid amount');
-      return;
+  const handleDxnAction = async () => {
+    if (!connected || !dxnAmount || Number(dxnAmount) <= 0) return;
+
+    setDxnLoading(true);
+    try {
+      const signer = await getSigner();
+      const amount = ethers.parseEther(dxnAmount);
+
+      if (dxnTab === 'stake') {
+        // Check allowance first
+        const dxn = new ethers.Contract(CONTRACTS.tDXN, ERC20_ABI, signer);
+        const allowance = await dxn.allowance(address, CONTRACTS.DXNForge);
+        
+        if (allowance < amount) {
+          const approveTx = await dxn.approve(CONTRACTS.DXNForge, ethers.MaxUint256);
+          await approveTx.wait();
+        }
+
+        // Stake
+        const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
+        const tx = await forge.stakeDXN(amount);
+        await tx.wait();
+      } else {
+        // Unstake
+        const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
+        const tx = await forge.unstakeDXN(amount);
+        await tx.wait();
+      }
+
+      setDxnAmount('');
+      refetch();
+    } catch (err) {
+      console.error('DXN action error:', err);
+    } finally {
+      setDxnLoading(false);
     }
-    if (dxnTab === 'stake') {
-      alert(`Mock: Staking ${dxnAmount} DXN!`);
-    } else {
-      alert(`Mock: Unstaking ${dxnAmount} DXN!`);
-    }
-    setDxnAmount('');
   };
 
   // GOLD handlers
@@ -51,29 +104,93 @@ function UserActions() {
     }
   };
 
-  const handleGoldAction = () => {
-    if (!goldAmount || Number(goldAmount) <= 0) {
-      alert('Please enter a valid amount');
-      return;
+  const handleGoldAction = async () => {
+    if (!connected || !goldAmount || Number(goldAmount) <= 0) return;
+
+    setGoldLoading(true);
+    try {
+      const signer = await getSigner();
+      const amount = ethers.parseEther(goldAmount);
+
+      if (goldTab === 'stake') {
+        // Check allowance first
+        const gold = new ethers.Contract(CONTRACTS.GOLDToken, ERC20_ABI, signer);
+        const allowance = await gold.allowance(address, CONTRACTS.DXNForge);
+        
+        if (allowance < amount) {
+          const approveTx = await gold.approve(CONTRACTS.DXNForge, ethers.MaxUint256);
+          await approveTx.wait();
+        }
+
+        // Stake
+        const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
+        const tx = await forge.stakeGold(amount);
+        await tx.wait();
+      } else {
+        // Unstake
+        const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
+        const tx = await forge.unstakeGold(amount);
+        await tx.wait();
+      }
+
+      setGoldAmount('');
+      refetch();
+    } catch (err) {
+      console.error('GOLD action error:', err);
+    } finally {
+      setGoldLoading(false);
     }
-    if (goldTab === 'stake') {
-      alert(`Mock: Staking ${goldAmount} GOLD!`);
-    } else {
-      alert(`Mock: Unstaking ${goldAmount} GOLD!`);
+  };
+
+  const handleClaimRewards = async () => {
+    if (!connected) return;
+
+    setClaimLoading(true);
+    try {
+      const signer = await getSigner();
+      const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
+      const tx = await forge.claimRewards();
+      await tx.wait();
+      refetch();
+    } catch (err) {
+      console.error('Claim error:', err);
+    } finally {
+      setClaimLoading(false);
     }
-    setGoldAmount('');
   };
 
-  const handleClaimGold = () => {
-    alert(`Mock: Claiming ${claimableGold} GOLD tokens!`);
+  const handleClaimEth = async () => {
+    if (!connected) return;
+
+    setClaimLoading(true);
+    try {
+      const signer = await getSigner();
+      const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
+      const tx = await forge.claimEth();
+      await tx.wait();
+      refetch();
+    } catch (err) {
+      console.error('Claim ETH error:', err);
+    } finally {
+      setClaimLoading(false);
+    }
   };
 
-  const handleClaimETH = () => {
-    alert(`Mock: Claiming ${claimableETH} ETH!`);
-  };
+  const handlePoke = async () => {
+    if (!connected) return;
 
-  const handleClaimAll = () => {
-    alert(`Mock: Claiming all rewards!\n${claimableGold} GOLD + ${claimableETH} ETH`);
+    setPokeLoading(true);
+    try {
+      const signer = await getSigner();
+      const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
+      const tx = await forge.poke();
+      await tx.wait();
+      refetch();
+    } catch (err) {
+      console.error('Poke error:', err);
+    } finally {
+      setPokeLoading(false);
+    }
   };
 
   return (
@@ -86,13 +203,26 @@ function UserActions() {
             <h3>Stake DXN</h3>
             <p>Stake DXN to earn tickets for GOLD</p>
           </div>
+          <button 
+            className="sync-button-inline"
+            onClick={handlePoke}
+            disabled={pokeLoading || !connected}
+            title="Syncs your pending to staked for DXN & GOLD.  Upddates UI with on-chain status."
+          >
+            <RefreshCw size={14} className={pokeLoading ? 'spinning' : ''} />
+            <span>{pokeLoading ? 'Syncing...' : 'Sync'}</span>
+          </button>
         </div>
 
         {/* Currently Staked Display */}
         <div className="currently-staked">
           <div className="staked-row">
-            <span className="staked-label">Currently Staked:</span>
-            <span className="staked-amount">{userDxnStaked.toLocaleString()} DXN</span>
+            <span className="staked-label">Pending:</span>
+            <span className="staked-amount">{formatNumber(userDxnPending)} DXN</span>
+          </div>
+          <div className="staked-row">
+            <span className="staked-label">Staked:</span>
+            <span className="staked-amount">{formatNumber(userDxnStaked)} DXN</span>
           </div>
         </div>
 
@@ -143,22 +273,50 @@ function UserActions() {
           </div>
           <div className="stake-balance">
             {dxnTab === 'stake' 
-              ? `Balance: ${userDxnBalance.toLocaleString()} DXN` 
-              : `Staked: ${userDxnStaked.toLocaleString()} DXN`
+              ? `Balance: ${formatNumber(userDxnBalance)} DXN` 
+              : `Staked: ${formatNumber(userDxnStaked)} DXN`
             }
           </div>
         </div>
 
         {/* Action Button */}
-        <button className="stake-action-btn" onClick={handleDxnAction}>
-          {dxnTab === 'stake' ? 'Stake DXN' : 'Unstake DXN'}
+        <button 
+          className="stake-action-btn" 
+          onClick={handleDxnAction}
+          disabled={dxnLoading || !connected}
+        >
+          {dxnLoading ? 'Processing...' : (dxnTab === 'stake' ? 'Stake DXN' : 'Unstake DXN')}
         </button>
 
         {/* Warning */}
-        <div className={`stake-warning ${currentEpoch >= 26 ? 'unlocked' : 'locked'}`}>
-          {currentEpoch < 26 
+        <div className={`stake-warning ${protocol.currentEpoch >= 26 ? 'unlocked' : 'locked'}`}>
+          {protocol.currentEpoch < 26 
             ? '🔒 Staked DXN is locked from Epoch 1-25 for bonus multiplier and unlocks at Epoch 26' 
             : '✅ Staked DXN is now unlocked - you can unstake anytime'}
+        </div>
+
+        {/* Your Tickets Info Card */}
+        <div className="tickets-info-card">
+          <div className="tickets-header">
+            <Ticket size={24} className="tickets-icon" />
+            <span>Your Tickets This Epoch</span>
+          </div>
+          <div className="tickets-total">
+            {formatNumber(userTotalTickets)}
+          </div>
+          <div className="tickets-breakdown">
+            <div className="tickets-row">
+              <span>From DXN Staking</span>
+              <span>{formatNumber(userTicketsFromStaking)}</span>
+            </div>
+            <div className="tickets-row">
+              <span>From XEN Burns</span>
+              <span>{formatNumber(userTicketsFromBurns)}</span>
+            </div>
+          </div>
+          <div className="tickets-hint">
+            Tickets convert to GOLD at epoch end via Buy & Burn
+          </div>
         </div>
       </div>
 
@@ -176,14 +334,17 @@ function UserActions() {
         {/* Currently Staked Display */}
         <div className="currently-staked">
           <div className="staked-row">
-            <span className="staked-label">Total Staked:</span>
-            <span className="staked-amount">{(userGoldStaked + userGoldAutoStaked).toLocaleString()} GOLD</span>
+            <span className="staked-label">Manual Pending:</span>
+            <span className="staked-amount">{formatNumber(userGoldPending)} GOLD</span>
           </div>
-          <div className="staked-breakdown">
-            <span>Manual: {userGoldStaked.toLocaleString()}</span>
-            <span className="divider">•</span>
-            <span>Auto-staked: {userGoldAutoStaked.toLocaleString()}</span>
+          <div className="staked-row">
+            <span className="staked-label">Manual Staked:</span>
+            <span className="staked-amount">{formatNumber(userGoldStaked)} GOLD</span>
           </div>
+          <div className="staked-row">
+            <span className="staked-label">Auto-Staked:</span>
+            <span className="staked-amount">{formatNumber(autoStakedGold + pendingGoldReward)} GOLD</span>
+            </div>
         </div>
 
         {/* Tab Buttons */}
@@ -216,7 +377,6 @@ function UserActions() {
           />
           <div className="slider-value gold">{Number(goldAmount || 0).toFixed(4)} GOLD</div>
           
-          {/* Unstake Tooltip */}
           {goldTab === 'unstake' && (
             <div className="unstake-tooltip">
               ℹ️ Can't unstake recently staked GOLD until next cycle completes
@@ -226,7 +386,6 @@ function UserActions() {
 
         {/* Amount Input */}
         <div className="stake-input-section">
-          <label className="stake-label">Amount to {goldTab === 'stake' ? 'Stake' : 'Unstake'}</label>
           <div className="stake-input-wrapper">
             <input
               type="number"
@@ -241,20 +400,24 @@ function UserActions() {
           </div>
           <div className="stake-balance">
             {goldTab === 'stake' 
-              ? `Balance: ${userGoldBalance.toLocaleString()} GOLD` 
-              : `Staked: ${userGoldStaked.toLocaleString()} GOLD`
+              ? `Balance: ${formatNumber(userGoldBalance)} GOLD` 
+              : `Staked: ${formatNumber(userGoldStaked)} GOLD`
             }
           </div>
         </div>
 
         {/* Action Button */}
-        <button className="stake-action-btn gold" onClick={handleGoldAction}>
-          {goldTab === 'stake' ? 'Stake GOLD' : 'Unstake GOLD'}
+        <button 
+          className="stake-action-btn gold" 
+          onClick={handleGoldAction}
+          disabled={goldLoading || !connected}
+        >
+          {goldLoading ? 'Processing...' : (goldTab === 'stake' ? 'Stake GOLD' : 'Unstake GOLD')}
         </button>
 
         {/* GOLD Locking Disclaimer */}
         <div className="stake-warning gold-warning">
-          ℹ️ GOLD uses DBXen's lock+1 rule: Staked GOLD locks until the next cycle completes and doesn't earn ETH until that cycle completes
+          ℹ️ GOLD uses DBXen's lock+1 rule: Staked GOLD locks until the next cycle completes
         </div>
 
         {/* Divider */}
@@ -269,15 +432,12 @@ function UserActions() {
         <div className="rewards-list">
           <div className="reward-item">
             <div className="reward-info">
-              <Trophy size={20} className="reward-icon" />
+              <Coins size={20} className="reward-icon" style={{color: '#f5a623'}} />
               <div className="reward-details">
-                <span className="reward-label">GOLD Tokens</span>
-                <span className="reward-value">{claimableGold.toLocaleString()}</span>
+                <span className="reward-label">Auto-Staked & Claimable GOLD</span>
+                <span className="reward-value">{formatNumber(pendingGoldReward + autoStakedGold)}</span>
               </div>
             </div>
-            <button className="reward-claim" onClick={handleClaimGold}>
-              Claim
-            </button>
           </div>
 
           <div className="reward-item">
@@ -285,17 +445,25 @@ function UserActions() {
               <Coins size={20} className="reward-icon" style={{color: '#10b981'}} />
               <div className="reward-details">
                 <span className="reward-label">ETH Fees</span>
-                <span className="reward-value">{claimableETH.toLocaleString()}</span>
+                <span className="reward-value">{formatNumber(claimableETH)}</span>
               </div>
             </div>
-            <button className="reward-claim" onClick={handleClaimETH}>
+            <button 
+              className="reward-claim" 
+              onClick={handleClaimEth}
+              disabled={claimLoading || claimableETH === 0}
+            >
               Claim
             </button>
           </div>
         </div>
 
-        <button className="action-button" onClick={handleClaimAll}>
-          Claim All Rewards
+        <button 
+          className="action-button" 
+          onClick={handleClaimRewards}
+          disabled={claimLoading || !connected}
+        >
+          {claimLoading ? 'Processing...' : 'Claim All Rewards'}
         </button>
       </div>
     </div>
