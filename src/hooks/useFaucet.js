@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ethers } from 'ethers';
-import { CONTRACTS, FAUCET_ABI, SEPOLIA_RPC } from '../contracts';
+import { CONTRACTS, FAUCET_ABI, getReadProvider } from '../contracts';
 
 export const useFaucet = (token, walletAddress) => {
   const [timeUntilNext, setTimeUntilNext] = useState(0);
@@ -41,7 +41,7 @@ export const useFaucet = (token, walletAddress) => {
       const contractAddress = getFaucetAddress();
       if (!contractAddress) return;
 
-      const readProvider = new ethers.JsonRpcProvider(SEPOLIA_RPC);
+      const readProvider = getReadProvider();
       const contract = new ethers.Contract(contractAddress, FAUCET_ABI, readProvider);
       const time = Number(await contract.timeUntilNextClaim(walletAddress));
       

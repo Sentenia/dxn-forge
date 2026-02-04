@@ -4,7 +4,7 @@ import { ethers } from 'ethers';
 import NavAccordion from './NavAccordion';
 import { useWallet } from '../hooks/useWallet';
 import { useForgeData } from '../hooks/useForgeData';
-import { CONTRACTS, FORGE_ABI, ERC20_ABI, SEPOLIA_RPC } from '../contracts';
+import { CONTRACTS, FORGE_ABI, ERC20_ABI, getReadProvider } from '../contracts';
 import './BurnXEN.css';
 
 function BurnXEN({ onNavigate }) {
@@ -35,7 +35,7 @@ function BurnXEN({ onNavigate }) {
       if (!window.ethereum) return;
       
       try {
-        const provider = new ethers.JsonRpcProvider(SEPOLIA_RPC);
+        const provider = getReadProvider();
         const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, provider);
         const xen = new ethers.Contract(CONTRACTS.tXEN, ERC20_ABI, provider);
         
@@ -75,7 +75,7 @@ function BurnXEN({ onNavigate }) {
       if (batches === 0) return;
       
       try {
-        const provider = new ethers.JsonRpcProvider(SEPOLIA_RPC);
+        const provider = getReadProvider();
         const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, provider);
         
         const [fee, disc] = await forge.calcFee(batches);

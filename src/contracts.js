@@ -157,19 +157,12 @@ const sepoliaNetwork = ethers.Network.from(11155111);
 
 export function getReadProvider() {
   const alchemyKey = import.meta.env.VITE_ALCHEMY_KEY;
-  const urls = [
-    alchemyKey ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}` : null,
-    'https://ethereum-sepolia-rpc.publicnode.com',
-    'https://1rpc.io/sepolia',
-  ].filter(Boolean);
-
-  return new ethers.FallbackProvider(
-    urls.map((url, i) => ({
-      provider: new ethers.JsonRpcProvider(url, sepoliaNetwork, { staticNetwork: true }),
-      priority: i + 1,
-      stallTimeout: 2000,
-      weight: 1,
-    })),
-    1
-  );
+  
+  const primary = alchemyKey
+    ? new ethers.JsonRpcProvider(`https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}`, sepoliaNetwork, { staticNetwork: true })
+    : null;
+  
+  const backup = new ethers.JsonRpcProvider('https://ethereum-sepolia-rpc.publicnode.com', sepoliaNetwork, { staticNetwork: true });
+  
+  return primary || backup;
 }
