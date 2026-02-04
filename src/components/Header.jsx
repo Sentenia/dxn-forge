@@ -180,7 +180,7 @@ function Header({ onNavigate, currentPage = 'stake' }) {
             <div className="faucet-buttons">
               <button 
                 className="faucet-btn"
-                onClick={() => window.open('https://www.alchemy.com/faucets/ethereum-sepolia', '_blank')}
+                onClick={() => window.open('https://faucets.chain.link/sepolia', '_blank')}
                 title="Get Sepolia ETH"
               >
                 <span className="faucet-icon">💧</span>
