@@ -1,140 +1,96 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
+import {
+  useAppKit,
+  useAppKitAccount,
+  useAppKitNetwork,
+  useAppKitProvider,
+  useDisconnect,
+} from '@reown/appkit/react';
 
 const SEPOLIA_CHAIN_ID = 11155111;
 
 export const useWallet = () => {
-  const [address, setAddress] = useState(null);
-  const [connected, setConnected] = useState(false);
-  const [chainId, setChainId] = useState(null);
+  const { open } = useAppKit();
+  const { address, isConnected } = useAppKitAccount();
+  const { chainId } = useAppKitNetwork();
+  const { walletProvider } = useAppKitProvider('eip155');
+  const { disconnect: appkitDisconnect } = useDisconnect();
+
   const [balance, setBalance] = useState('0.00');
   const [error, setError] = useState(null);
 
-  // Fetch ETH balance — uses MetaMask but only when already connected
+  // Normalize chainId to a number (AppKit may return it as number or bigint)
+  const numericChainId = chainId ? Number(chainId) : null;
+
+  // Fetch ETH balance using the connected wallet's provider
   const fetchBalance = useCallback(async (addr) => {
     try {
-      if (!window.ethereum || !addr) return;
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const balanceWei = await provider.getBalance(addr);
-      setBalance(parseFloat(ethers.formatEther(balanceWei)).toFixed(2));
+      if (!walletProvider || !addr) return;
+      const provider = new ethers.BrowserProvider(walletProvider);
+      const bal = await provider.getBalance(addr);
+      setBalance(parseFloat(ethers.formatEther(bal)).toFixed(2));
     } catch (err) {
       // Silently fail — balance display is not critical
     }
-  }, []);
+  }, [walletProvider]);
 
-  // On mount: check if already connected (NON-PROMPTING)
-  // Small delay to let MetaMask's service worker wake up
+  // Update balance when connection or address changes
   useEffect(() => {
-    const timer = setTimeout(async () => {
-      try {
-        if (!window.ethereum) return;
-        // eth_accounts is non-prompting — just checks silently
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts.length > 0) {
-          const chainHex = await window.ethereum.request({ method: 'eth_chainId' });
-          setAddress(accounts[0]);
-          setConnected(true);
-          setChainId(parseInt(chainHex, 16));
-          fetchBalance(accounts[0]);
-        }
-      } catch (err) {
-        // MetaMask service worker might be dead — that's fine, user can click Connect
-        console.warn('MetaMask check skipped:', err.message);
-      }
-    }, 500); // 500ms delay lets MetaMask initialize
-
-    return () => clearTimeout(timer);
-  }, [fetchBalance]);
-
-  // Listen for MetaMask account/chain changes
-  useEffect(() => {
-    if (!window.ethereum) return;
-
-    const handleAccountsChanged = (accounts) => {
-      if (accounts.length === 0) {
-        setAddress(null);
-        setConnected(false);
-        setChainId(null);
-        setBalance('0.00');
-      } else {
-        setAddress(accounts[0]);
-        setConnected(true);
-        fetchBalance(accounts[0]);
-      }
-    };
-
-    const handleChainChanged = (chainHex) => {
-      setChainId(parseInt(chainHex, 16));
-      if (address) fetchBalance(address);
-    };
-
-    window.ethereum.on('accountsChanged', handleAccountsChanged);
-    window.ethereum.on('chainChanged', handleChainChanged);
-
-    return () => {
-      if (window.ethereum.removeListener) {
-        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-        window.ethereum.removeListener('chainChanged', handleChainChanged);
-      }
-    };
-  }, [address, fetchBalance]);
+    if (isConnected && address) {
+      fetchBalance(address);
+    } else {
+      setBalance('0.00');
+    }
+  }, [isConnected, address, fetchBalance]);
 
   // Poll balance every 15s when connected
   useEffect(() => {
-    if (!connected || !address) return;
+    if (!isConnected || !address) return;
     const interval = setInterval(() => fetchBalance(address), 15000);
     return () => clearInterval(interval);
-  }, [connected, address, fetchBalance]);
+  }, [isConnected, address, fetchBalance]);
 
-  // Connect — the ONLY function that prompts MetaMask
+  // Connect — opens the AppKit wallet selection modal
   const connect = async () => {
     try {
       setError(null);
-      if (!window.ethereum) {
-        setError('Please install MetaMask');
-        return;
-      }
-
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      if (!accounts || accounts.length === 0) return;
-
-      const chainHex = await window.ethereum.request({ method: 'eth_chainId' });
-      setAddress(accounts[0]);
-      setConnected(true);
-      setChainId(parseInt(chainHex, 16));
-      await fetchBalance(accounts[0]);
-
-      if (parseInt(chainHex, 16) !== SEPOLIA_CHAIN_ID) {
-        try { await switchToSepolia(); } catch (e) { /* non-fatal */ }
-      }
+      await open();
     } catch (err) {
       console.error('Wallet connect error:', err);
       setError(err.message);
     }
   };
 
+  // Disconnect — clears AppKit connection state
   const disconnect = () => {
-    setAddress(null);
-    setConnected(false);
-    setChainId(null);
-    setBalance('0.00');
+    try {
+      appkitDisconnect();
+      setBalance('0.00');
+    } catch (err) {
+      console.error('Disconnect error:', err);
+    }
   };
 
+  // Switch to Sepolia
   const switchToSepolia = async () => {
     try {
-      await window.ethereum.request({
+      const provider = walletProvider || window.ethereum;
+      if (!provider) return;
+      await provider.request({
         method: 'wallet_switchEthereumChain',
         params: [{ chainId: '0xaa36a7' }],
       });
     } catch (switchError) {
       if (switchError.code === 4902) {
-        await window.ethereum.request({
+        const provider = walletProvider || window.ethereum;
+        await provider.request({
           method: 'wallet_addEthereumChain',
           params: [{
             chainId: '0xaa36a7',
             chainName: 'Sepolia Testnet',
             nativeCurrency: { name: 'Sepolia ETH', symbol: 'ETH', decimals: 18 },
-            rpcUrls: ['https://rpc.sepolia.org'],
+            rpcUrls: ['https://ethereum-sepolia-rpc.publicnode.com'],
             blockExplorerUrls: ['https://sepolia.etherscan.io'],
           }],
         });
@@ -144,18 +100,28 @@ export const useWallet = () => {
     }
   };
 
+  // getSigner — uses AppKit provider, falls back to window.ethereum
+  // Components can use this instead of creating their own BrowserProvider
+  const getSigner = useCallback(async () => {
+    const p = walletProvider || window.ethereum;
+    if (!p) throw new Error('No wallet connected');
+    const provider = new ethers.BrowserProvider(p);
+    return provider.getSigner();
+  }, [walletProvider]);
+
   const fmtAddr = address ? `${address.slice(0, 6)}...${address.slice(-4)}` : '';
 
   return {
-    address,
-    connected,
-    chainId,
+    address: address || null,
+    connected: isConnected,
+    chainId: numericChainId,
     balance,
-    isOnSepolia: chainId === SEPOLIA_CHAIN_ID,
+    isOnSepolia: numericChainId === SEPOLIA_CHAIN_ID,
     error,
     connect,
     disconnect,
     switchToSepolia,
+    getSigner,
     formatAddress: fmtAddr,
   };
 };

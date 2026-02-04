@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { TrendingUp, Unlock, Trophy, Gift, Coins, Ticket, RefreshCw } from 'lucide-react';
+import { TrendingUp, Lock, Unlock, Info, Trophy, Gift, Coins, Ticket, RefreshCw } from 'lucide-react';
 import { ethers } from 'ethers';
 import { useWallet } from '../hooks/useWallet';
 import { useForgeData } from '../hooks/useForgeData';
 import { CONTRACTS, FORGE_ABI, ERC20_ABI } from '../contracts';
+
 
 function UserActions() {
   const { address, connected } = useWallet();
@@ -183,7 +184,7 @@ function UserActions() {
     try {
       const signer = await getSigner();
       const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
-      const tx = await forge.poke();
+      const tx = await forge.sync();
       await tx.wait();
       refetch();
     } catch (err) {
@@ -232,7 +233,7 @@ function UserActions() {
             className={`stake-tab ${dxnTab === 'stake' ? 'active' : ''}`}
             onClick={() => setDxnTab('stake')}
           >
-            🔒 Stake
+            <Lock size={16} style={{display: 'inline', marginRight: '4px'}} /> Stake
           </button>
           <button 
             className={`stake-tab ${dxnTab === 'unstake' ? 'active' : ''}`}
@@ -289,10 +290,9 @@ function UserActions() {
         </button>
 
         {/* Warning */}
-        <div className={`stake-warning ${protocol.currentEpoch >= 26 ? 'unlocked' : 'locked'}`}>
-          {protocol.currentEpoch < 26 
-            ? '🔒 Staked DXN is locked from Epoch 1-25 for bonus multiplier and unlocks at Epoch 26' 
-            : '✅ Staked DXN is now unlocked - you can unstake anytime'}
+        <div className="stake-warning dxn-warning">
+        <Info size={16} style={{display: 'inline', marginRight: '6px', marginBottom: '-2px'}} /> 
+        DXN uses DBXen's lock+2 rule: Staked DXN locks until two cycles complete
         </div>
 
         {/* Your Tickets Info Card */}
@@ -353,7 +353,7 @@ function UserActions() {
             className={`stake-tab ${goldTab === 'stake' ? 'active' : ''}`}
             onClick={() => setGoldTab('stake')}
           >
-            🔒 Stake
+            <Lock size={16} style={{display: 'inline', marginRight: '4px'}} /> Stake
           </button>
           <button 
             className={`stake-tab ${goldTab === 'unstake' ? 'active' : ''}`}
@@ -379,7 +379,7 @@ function UserActions() {
           
           {goldTab === 'unstake' && (
             <div className="unstake-tooltip">
-              ℹ️ Can't unstake recently staked GOLD until next cycle completes
+              <Info size={16} style={{display: 'inline', marginRight: '4px'}} /> Can't unstake recently staked GOLD until next cycle completes
             </div>
           )}
         </div>
@@ -417,7 +417,7 @@ function UserActions() {
 
         {/* GOLD Locking Disclaimer */}
         <div className="stake-warning gold-warning">
-          ℹ️ GOLD uses DBXen's lock+1 rule: Staked GOLD locks until the next cycle completes
+          <Info size={16} style={{display: 'inline', marginRight: '6px', marginBottom: '-2px'}} /> GOLD uses DBXen's lock+1 rule: Staked GOLD locks until the next cycle completes
         </div>
 
         {/* Divider */}

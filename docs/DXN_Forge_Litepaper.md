@@ -38,18 +38,18 @@ DXN Forge operates on three core principles:
 #### DXN Staking Pool
 Users stake DXN tokens to earn:
 - **Tickets:** Earned each epoch (epoch ends when Buy & Burn is triggered, 1 epoch could be mulitple DBXen 24hr cycles)
-- **Bonus Multipliers:** Epochs 1-25 provide bonuses, starting at 10x ticket allocation for early stakers on Epoch 1, then decreases each epoch thereafter.  During this period, all DXN staked is soft-locked until Epoch 26
-- **Unlock at Epoch 26:** All staked DXN becomes liquid
+- **Bonus Multipliers:** Epochs 1-25 provide bonuses, starting at 10x ticket allocation for early stakers on Epoch 1, then decreases each epoch thereafter.
+- **Epoch 26:** All staked DXN receives standard 1x multiplier to ticket allocation forever.
 
 #### GOLD Token
 - **Minting:** Distributed pro-rata to ticket holders from 8.88% buy & burn bucket
 - **Auto-Staking:** All GOLD is automatically staked upon receipt
-- **ETH Rewards:** Staked GOLD earns from 90% of protocol ETH fees
+- **ETH Rewards:** Staked GOLD earns from 88%% of protocol ETH fees
 
 #### XEN Burning
 - **Direct Participation:** Burn XEN in 2.5M batches (1-10,000 batches per transaction)
 - **Ticket Rewards:** Linear scale: 10,000 batches = 1 ticket
-- **Fee Discounts:** Up to 50% protocol fee reduction for bulk burns
+- **Fee Discounts:** Up to 50% protocol fee reduction for bulk burns (max burn batch)
 
 ### 2.2 Fee Distribution
 
@@ -74,7 +74,7 @@ Users stake DXN tokens to earn:
 
 **Utility:**
 - Primary staking asset
-- Earns tickets for GOLD distribution (when staked)
+- Earns tickets for GOLD distribution (when staked in DXN FORGE)
 - Bonus multipliers during Epochs 1-25
 - Can be locked long-term (1000-5000 days) for amplified rewards
 
@@ -92,7 +92,7 @@ Users stake DXN tokens to earn:
 
 **Lock+1 Rule (DBXen Standard):**
 - Manually staked GOLD locks until the next cycle completes
-- Doesn't earn ETH rewards until that cycle completes
+- Doesn't earn ETH rewards until the next cycle begins
 - Applies to manual staking only (auto-staked GOLD from tickets is immediately liquid and earns ETH)
 
 ---
