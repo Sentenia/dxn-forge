@@ -1,3 +1,7 @@
+/* ============================================
+   NavAccordion.css — Page Navigation Accordion
+   ============================================ */
+
 .nav-accordion {
   display: flex;
   flex-direction: column;
@@ -6,21 +10,15 @@
   margin: 0 auto 32px;
 }
 
-.accordion-card {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 12px;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
+/* accordion-card base in theme.css */
 
 .accordion-card.active {
-  border-color: rgba(245, 158, 11, 0.5);
-  background: rgba(245, 158, 11, 0.05);
+  border-color: var(--gold-50);
+  background: var(--gold-5);
 }
 
 .accordion-card.expanded {
-  background: rgba(255,255,255,0.05);
+  background: var(--bg-elevated);
 }
 
 .accordion-header {
@@ -31,13 +29,14 @@
   padding: 14px 18px;
   background: none;
   border: none;
-  color: white;
+  color: var(--text-primary);
+  font-family: var(--font);
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background var(--t-fast);
 }
 
 .accordion-header:hover {
-  background: rgba(255,255,255,0.05);
+  background: var(--bg-elevated);
 }
 
 .accordion-title {
@@ -46,40 +45,40 @@
   gap: 10px;
   font-weight: 600;
   font-size: 13px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.04em;
 }
 
 .accordion-badge {
   font-size: 9px;
   padding: 2px 6px;
   border-radius: 4px;
-  background: rgba(245, 158, 11, 0.2);
-  color: #f59e0b;
+  background: var(--gold-15);
+  color: var(--gold);
   font-weight: 700;
 }
 
 .accordion-badge.diamond {
-  background: rgba(147, 51, 234, 0.2);
-  color: #a78bfa;
+  background: var(--purple-15);
+  color: var(--purple-soft);
 }
 
 .accordion-badge.fire {
-  background: rgba(239, 68, 68, 0.2);
+  background: var(--red-15);
   color: #f87171;
 }
 
 .accordion-content {
   padding: 0 18px 18px;
-  animation: slideDown 0.3s ease;
+  animation: slideDown 0.25s var(--ease-out);
 }
 
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .accordion-content p {
-  color: #999;
+  color: var(--text-muted);
   font-size: 13px;
   margin-bottom: 12px;
   line-height: 1.5;
@@ -98,23 +97,25 @@
 
 .acc-stat .label {
   font-size: 10px;
-  color: #666;
+  color: var(--text-dim);
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .acc-stat .value {
   font-size: 16px;
   font-weight: 700;
-  color: white;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .acc-stat .value.highlight {
-  color: #f59e0b;
+  color: var(--gold);
 }
 
 .accordion-note {
-  font-size: 11px !important;
-  color: #777 !important;
+  font-size: 11px;
+  color: var(--text-muted);
 }
 
 .lock-tiers {
@@ -125,33 +126,23 @@
 
 .lock-tiers .tier {
   padding: 4px 10px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 6px;
+  background: var(--bg-elevated);
+  border-radius: var(--r-xs);
   font-size: 11px;
-  color: #777;
+  color: var(--text-muted);
 }
 
 .lock-tiers .tier.highlight {
-  background: rgba(245, 158, 11, 0.2);
-  color: #f59e0b;
+  background: var(--gold-15);
+  color: var(--gold);
 }
 
+/* accordion-btn base in theme.css */
 .accordion-btn {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: black;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-weight: 600;
-  font-size: 12px;
-  cursor: pointer;
   margin-top: 8px;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.accordion-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+  font-size: 12px;
+  padding: 8px 16px;
+  font-family: var(--font);
 }
 
 .accordion-card.clickable {
@@ -159,14 +150,14 @@
 }
 
 .accordion-card.clickable:not(.active):hover {
-  border-color: rgba(245, 158, 11, 0.3);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--gold-20);
+  background: var(--bg-card-hover);
 }
 
 .nav-arrow {
   font-size: 16px;
   opacity: 0.5;
-  transition: opacity 0.2s;
+  transition: opacity var(--t-fast);
 }
 
 .accordion-card:hover .nav-arrow {
