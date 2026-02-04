@@ -1,54 +1,170 @@
-/* Theme Variables */
-:root[data-theme="dark"] {
-  --bg-primary: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
-  --bg-card: rgba(255, 255, 255, 0.05);
-  --bg-card-hover: rgba(255, 255, 255, 0.08);
-  --bg-input: rgba(0, 0, 0, 0.3);
-  --bg-header: rgba(10, 10, 10, 0.95);
-  
-  --text-primary: #ffffff;
-  --text-secondary: #a0a0a0;
-  --text-tertiary: #707070;
-  
-  --border-primary: rgba(255, 255, 255, 0.1);
-  --border-hover: rgba(255, 255, 255, 0.2);
-  
-  --shadow-card: rgba(0, 0, 0, 0.3);
+/* ============================================
+   DXN Forge — Theme & Global Foundation
+   ============================================
+   
+   ADD TO index.html <head>:
+   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+   
+   ============================================ */
+
+/* ── Shared Design Tokens ───────────────────── */
+:root {
+  /* Typography */
+  --font: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Gold Palette — the brand */
+  --gold: #ff9d00;
+  --gold-light: #ffb700;
+  --gold-token: #ffd700;
+  --gold-gradient: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+  --gold-token-gradient: linear-gradient(135deg, var(--gold-token) 0%, #ffed4e 100%);
+
+  /* Gold Opacity Scale */
+  --gold-5: rgba(255, 157, 0, 0.05);
+  --gold-8: rgba(255, 157, 0, 0.08);
+  --gold-10: rgba(255, 157, 0, 0.1);
+  --gold-15: rgba(255, 157, 0, 0.15);
+  --gold-20: rgba(255, 157, 0, 0.2);
+  --gold-30: rgba(255, 157, 0, 0.3);
+  --gold-40: rgba(255, 157, 0, 0.4);
+  --gold-50: rgba(255, 157, 0, 0.5);
+  --gold-60: rgba(255, 157, 0, 0.6);
+
+  /* Accents */
+  --red: #ef4444;
+  --red-10: rgba(239, 68, 68, 0.1);
+  --red-15: rgba(239, 68, 68, 0.15);
+  --red-30: rgba(239, 68, 68, 0.3);
+  --red-40: rgba(239, 68, 68, 0.4);
+
+  --purple: #a855f7;
+  --purple-soft: #c084fc;
+  --purple-muted: #ba55d3;
+  --purple-10: rgba(168, 85, 247, 0.1);
+  --purple-15: rgba(168, 85, 247, 0.15);
+  --purple-20: rgba(138, 43, 226, 0.2);
+  --purple-30: rgba(168, 85, 247, 0.3);
+
+  --green: #10b981;
+  --green-10: rgba(16, 185, 129, 0.1);
+
+  --blue: #60a5fa;
+  --blue-10: rgba(59, 130, 246, 0.1);
+  --blue-30: rgba(59, 130, 246, 0.3);
+
+  /* Radii */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 16px;
+
+  /* Timing — cubic-bezier for premium feel */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t-fast: 0.15s var(--ease);
+  --t: 0.25s var(--ease);
+  --t-slow: 0.4s var(--ease);
 }
 
+/* ── Dark Theme ─────────────────────────────── */
+:root[data-theme="dark"] {
+  --bg-base: #0b0b0d;
+  --bg-warm: #12110f;
+  --bg-card: rgba(255, 255, 255, 0.025);
+  --bg-card-hover: rgba(255, 255, 255, 0.055);
+  --bg-elevated: rgba(255, 255, 255, 0.04);
+  --bg-input: rgba(0, 0, 0, 0.35);
+  --bg-input-focus: rgba(0, 0, 0, 0.5);
+  --bg-header: rgba(11, 11, 13, 0.92);
+  --bg-dropdown: rgba(16, 16, 18, 0.98);
+  --bg-overlay: rgba(0, 0, 0, 0.25);
+  --bg-inset: rgba(0, 0, 0, 0.2);
+
+  --text-primary: #f5f5f5;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --text-dim: #4b5563;
+
+  --border: rgba(255, 255, 255, 0.07);
+  --border-hover: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.18);
+
+  --divider: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.08) 50%, transparent 100%);
+
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.45);
+  --shadow-gold: 0 8px 28px rgba(255, 157, 0, 0.25);
+  --shadow-gold-lg: 0 12px 40px rgba(255, 157, 0, 0.35);
+}
+
+/* ── Light Theme ────────────────────────────── */
 :root[data-theme="light"] {
-  --bg-primary: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
-  --bg-card: rgba(255, 255, 255, 0.9);
-  --bg-card-hover: rgba(255, 255, 255, 1);
-  --bg-input: rgba(255, 255, 255, 0.8);
-  --bg-header: rgba(255, 255, 255, 0.95);
-  
+  --bg-base: #f8f7f4;
+  --bg-warm: #eae8e3;
+  --bg-card: rgba(255, 255, 255, 0.75);
+  --bg-card-hover: rgba(255, 255, 255, 0.9);
+  --bg-elevated: rgba(255, 255, 255, 0.85);
+  --bg-input: rgba(255, 255, 255, 0.9);
+  --bg-input-focus: #ffffff;
+  --bg-header: rgba(248, 247, 244, 0.95);
+  --bg-dropdown: rgba(255, 255, 255, 0.98);
+  --bg-overlay: rgba(0, 0, 0, 0.04);
+  --bg-inset: rgba(0, 0, 0, 0.03);
+
   --text-primary: #1a1a1a;
   --text-secondary: #4a4a4a;
-  --text-tertiary: #6a6a6a;
-  
-  --border-primary: rgba(0, 0, 0, 0.1);
-  --border-hover: rgba(0, 0, 0, 0.2);
-  
-  --shadow-card: rgba(0, 0, 0, 0.1);
+  --text-muted: #6a6a6a;
+  --text-dim: #8a8a8a;
+
+  --border: rgba(0, 0, 0, 0.07);
+  --border-hover: rgba(0, 0, 0, 0.12);
+  --border-strong: rgba(0, 0, 0, 0.18);
+
+  --divider: linear-gradient(90deg, transparent 0%, rgba(0, 0, 0, 0.08) 50%, transparent 100%);
+
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.12);
+  --shadow-gold: 0 8px 28px rgba(255, 157, 0, 0.12);
+  --shadow-gold-lg: 0 12px 40px rgba(255, 157, 0, 0.18);
 }
 
-* {
+/* ── Global Reset ───────────────────────────── */
+*, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* ── HTML & Body ────────────────────────────── */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--bg-primary);
+  font-family: var(--font);
   color: var(--text-primary);
   min-height: 100vh;
-  transition: background 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+  background-color: var(--bg-base);
+  /* Warm gold glow behind hero — gives depth */
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% -5%, var(--gold-5) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 75% 5%, rgba(255, 183, 0, 0.02) 0%, transparent 50%);
+  background-attachment: fixed;
+  transition: background-color var(--t), color var(--t);
 }
 
 .app-wrapper {
   min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
 .container {
@@ -57,59 +173,146 @@ body {
   padding: 20px;
 }
 
-/* Update card backgrounds to use theme variables */
+/* ── Selection ──────────────────────────────── */
+::selection {
+  background: var(--gold-30);
+  color: var(--text-primary);
+}
+
+/* ── Scrollbar (Webkit + Firefox) ───────────── */
+::-webkit-scrollbar {
+  width: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.06) transparent;
+}
+
+/* ── Global Link / Focus ────────────────────── */
+a {
+  color: var(--gold);
+  text-decoration: none;
+  transition: color var(--t-fast);
+}
+
+a:hover {
+  color: var(--gold-light);
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold-40);
+  outline-offset: 2px;
+}
+
+/* ── Global Card Foundation ─────────────────── */
 .big-card,
 .info-card,
-.action-card {
+.action-card,
+.promo-card,
+.stat-card,
+.accordion-card {
   background: var(--bg-card);
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border-primary);
-  transition: all 0.3s ease;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  transition:
+    background var(--t),
+    border-color var(--t),
+    transform var(--t),
+    box-shadow var(--t);
 }
 
 .big-card:hover,
-.info-card:hover {
+.info-card:hover,
+.promo-card:hover {
   background: var(--bg-card-hover);
-  border-color: rgba(255, 157, 0, 0.3);
+  border-color: var(--gold-20);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
-/* Update text colors */
-.big-card-label,
-.info-card-label,
-.input-label,
-.reward-label,
-.center-sublabel,
-.big-card-sublabel {
-  color: var(--text-tertiary);
+/* ── Global Button Foundation ───────────────── */
+.claim-button,
+.stake-action-btn,
+.action-button:not(.secondary),
+.promo-btn.primary,
+.accordion-btn {
+  background: var(--gold-gradient);
+  border: none;
+  border-radius: var(--r-md);
+  color: #000;
+  font-family: var(--font);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform var(--t-fast),
+    box-shadow var(--t);
 }
 
-.info-card-header,
-.big-card-header,
-.center-label {
-  color: var(--text-secondary);
+.claim-button:hover:not(:disabled),
+.stake-action-btn:hover:not(:disabled),
+.action-button:not(.secondary):hover:not(:disabled),
+.promo-btn.primary:hover:not(:disabled),
+.accordion-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-gold);
 }
 
-/* Update input backgrounds */
+.claim-button:active:not(:disabled),
+.stake-action-btn:active:not(:disabled),
+.action-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.claim-button:disabled,
+.stake-action-btn:disabled,
+.action-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Global Input Foundation ────────────────── */
 .stake-input,
-.bnb-input input,
 .input-wrapper input {
   background: var(--bg-input);
-  border: 1px solid var(--border-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
   color: var(--text-primary);
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast),
+    box-shadow var(--t-fast);
 }
 
 .stake-input:focus,
 .input-wrapper input:focus {
-  border-color: rgba(255, 157, 0, 0.5);
+  outline: none;
+  border-color: var(--gold-40);
+  background: var(--bg-input-focus);
+  box-shadow: 0 0 0 3px var(--gold-5);
 }
 
-/* Keep orange elements orange in both themes */
-.big-card-value,
-.info-card-value,
-.center-value,
-.logo-text,
-.hero h1 {
-  background: linear-gradient(135deg, #ff9d00 0%, #ffb700 100%);
+/* ── Gold Text Helper ───────────────────────── */
+.text-gold {
+  background: var(--gold-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

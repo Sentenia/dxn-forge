@@ -148,5 +148,28 @@ export const FORGE_ABI = [
   'function advanceEpoch(uint256)',
   'function resetFeeTimer()',
 ];
+
 export const DEPLOY_BLOCK = 10180000;
-export const SEPOLIA_RPC = import.meta.env.VITE_SEPOLIA_RPC || 'https://rpc.sepolia.org';
+
+import { ethers } from 'ethers';
+
+const sepoliaNetwork = ethers.Network.from(11155111);
+
+export function getReadProvider() {
+  const alchemyKey = import.meta.env.VITE_ALCHEMY_KEY;
+  const urls = [
+    alchemyKey ? `https://eth-sepolia.g.alchemy.com/v2/${alchemyKey}` : null,
+    'https://ethereum-sepolia-rpc.publicnode.com',
+    'https://1rpc.io/sepolia',
+  ].filter(Boolean);
+
+  return new ethers.FallbackProvider(
+    urls.map((url, i) => ({
+      provider: new ethers.JsonRpcProvider(url, sepoliaNetwork, { staticNetwork: true }),
+      priority: i + 1,
+      stallTimeout: 2000,
+      weight: 1,
+    })),
+    1
+  );
+}

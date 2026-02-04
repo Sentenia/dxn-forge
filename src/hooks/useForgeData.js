@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ethers } from 'ethers';
 import { useWallet } from './useWallet';
-import { CONTRACTS, ERC20_ABI, FORGE_ABI, GOLD_ABI, MOCK_DBXEN_ABI, SEPOLIA_RPC } from '../contracts';
+import { CONTRACTS, ERC20_ABI, FORGE_ABI, GOLD_ABI, MOCK_DBXEN_ABI, getReadProvider } from '../contracts';
+const pubProvider = getReadProvider();
 
 // Dual RPC — protocol reads on Alchemy, user reads on public RPC
 const pubProvider = new ethers.JsonRpcProvider(SEPOLIA_RPC, 11155111, { staticNetwork: true });
