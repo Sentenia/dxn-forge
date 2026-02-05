@@ -279,6 +279,22 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+.stat-pill-label-short {
+  display: none;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-pill-label-full {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
 
 .stat-pill-value {
   font-size: 13px;
@@ -910,7 +926,7 @@
 
   /* Hide epoch/cycle pills to save space */
   .header-stats-pills {
-    display: none;
+    display: flex;
   }
 
   /* Show faucets inside hamburger dropdown */
@@ -921,6 +937,25 @@
 
 /* ── Mobile: ≤ 768px ────────────────────────── */
 @media (max-width: 768px) {
+    .header-stats-pills {
+    display: flex;
+    gap: 4px;
+    margin-left: 4px;
+    }
+
+    .stat-pill {
+    padding: 4px 7px;
+    gap: 3px;
+    }
+
+    .stat-pill-label {
+    font-size: 8px;
+    }
+
+    .stat-pill-value {
+    font-size: 11px;
+    }
+
   .app-header {
     padding: 8px 12px;
   }
@@ -1036,7 +1071,18 @@
     padding: 6px 8px;
   }
 
-  /* Hide wallet address — just show wallet icon */
+  .stat-pill-label-full { display: none; }
+  .stat-pill-label-short { display: inline; }
+
+  .stat-pill {
+    padding: 4px 6px;
+    gap: 3px;
+  }
+
+  .stat-pill-value {
+    font-size: 11px;
+  }
+
   .wallet-address {
     display: none;
   }

@@ -209,13 +209,15 @@ function Header({ onNavigate, currentPage = 'stake' }) {
 
             <div className="header-stats-pills">
               <div className="stat-pill">
-                <span className="stat-pill-label">Epoch</span>
+                <span className="stat-pill-label-full">Epoch</span>
+                <span className="stat-pill-label-short">Ep</span>
                 <span className="stat-pill-value">{protocol.currentEpoch || 1}</span>
-              </div>
-              <div className="stat-pill">
-                <span className="stat-pill-label">Cycle</span>
+                </div>
+                <div className="stat-pill">
+                <span className="stat-pill-label-full">Cycle</span>
+                <span className="stat-pill-label-short">Cyc</span>
                 <span className="stat-pill-value">{protocol.currentCycle || 1}</span>
-              </div>
+                </div>
             </div>
           </div>
 
