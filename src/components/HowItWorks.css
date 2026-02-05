@@ -1,0 +1,385 @@
+/* ============================================
+   HowItWorks.css — How It Works Page Styles
+   ============================================ */
+
+.how-it-works-page {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Hero Section ───────────────────────────── */
+.hiw-hero {
+  text-align: center;
+  padding: 40px 20px 30px;
+}
+
+.logo-container {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 24px;
+}
+
+.logo-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  height: 200px;
+  background: radial-gradient(ellipse, rgba(255, 157, 0, 0.25) 0%, transparent 70%);
+  filter: blur(30px);
+  pointer-events: none;
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.hiw-logo {
+  max-width: 400px;
+  width: 100%;
+  height: auto;
+  position: relative;
+  z-index: 1;
+}
+
+.hiw-tagline {
+  font-size: 36px;
+  font-weight: 700;
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 12px;
+  letter-spacing: -0.5px;
+}
+
+.hiw-subtitle {
+  font-size: 18px;
+  color: var(--text-secondary);
+  margin-bottom: 0;
+}
+
+/* ── Flow Diagram Section ───────────────────── */
+.flow-diagram-section {
+  margin: 40px 0;
+}
+
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-bottom: 24px;
+}
+
+.flow-diagram-container {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.flow-diagram {
+  width: 100%;
+  max-width: 650px;
+  height: auto;
+  margin: 0 auto;
+  display: block;
+}
+
+.flow-diagram text {
+  font-family: var(--font);
+}
+
+/* Node hover effects */
+.flow-diagram .node rect,
+.flow-diagram .node circle {
+  transition: all 0.3s ease;
+}
+
+.flow-diagram .node:hover rect,
+.flow-diagram .node:hover circle {
+  filter: brightness(1.2);
+}
+
+/* Animated pulse on forge */
+.pulse-circle {
+  animation: forgePulse 2s ease-in-out infinite;
+}
+
+@keyframes forgePulse {
+  0%, 100% { r: 45; opacity: 0.1; }
+  50% { r: 55; opacity: 0.2; }
+}
+
+/* Flow arrows glow animation */
+.flow-arrow {
+  filter: drop-shadow(0 0 3px currentColor);
+}
+
+.flow-description {
+  text-align: center;
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* ── Explanation Cards ──────────────────────── */
+.explanation-section {
+  margin: 50px 0;
+}
+
+.explanation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.explanation-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  transition: all var(--t);
+}
+
+.explanation-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--gold-20);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-header h3 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.card-header.purple {
+  background: var(--purple-10);
+  border-bottom-color: var(--purple-30);
+  color: var(--purple-soft);
+}
+
+.card-header.red {
+  background: var(--red-10);
+  border-bottom-color: var(--red-30);
+  color: #f87171;
+}
+
+.card-header.gold {
+  background: var(--gold-10);
+  border-bottom-color: var(--gold-30);
+  color: var(--gold);
+}
+
+.card-header.yellow {
+  background: rgba(255, 215, 0, 0.1);
+  border-bottom-color: rgba(255, 215, 0, 0.3);
+  color: #ffd700;
+}
+
+.card-header.orange {
+  background: var(--gold-10);
+  border-bottom-color: var(--gold-30);
+  color: var(--gold);
+}
+
+.card-content {
+  padding: 20px;
+}
+
+.card-content p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feature-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.feature-list li svg {
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+/* ── CTA Section ────────────────────────────── */
+.hiw-cta {
+  text-align: center;
+  padding: 40px 20px;
+  margin-top: 20px;
+}
+
+.hiw-cta h3 {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 24px;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.cta-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 28px;
+  border-radius: var(--r-md);
+  font-size: 16px;
+  font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: all var(--t);
+}
+
+.cta-btn.primary {
+  background: var(--gold-gradient);
+  border: none;
+  color: #000;
+}
+
+.cta-btn.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-gold);
+}
+
+.cta-btn.secondary {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+}
+
+.cta-btn.secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--gold-30);
+  color: var(--gold);
+}
+
+/* ── Responsive ─────────────────────────────── */
+@media (max-width: 900px) {
+  .explanation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .hiw-hero {
+    padding: 30px 16px 20px;
+  }
+
+  .hiw-logo {
+    max-width: 280px;
+  }
+
+  .logo-glow {
+    width: 200px;
+    height: 140px;
+  }
+
+  .hiw-tagline {
+    font-size: 28px;
+  }
+
+  .hiw-subtitle {
+    font-size: 16px;
+  }
+
+  .section-title {
+    font-size: 20px;
+  }
+
+  .flow-diagram-container {
+    padding: 12px;
+  }
+
+  .flow-description {
+    font-size: 14px;
+  }
+
+  .card-header {
+    padding: 14px 16px;
+  }
+
+  .card-header h3 {
+    font-size: 15px;
+  }
+
+  .card-content {
+    padding: 16px;
+  }
+
+  .hiw-cta h3 {
+    font-size: 20px;
+  }
+
+  .cta-btn {
+    padding: 12px 20px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .how-it-works-page {
+    padding: 12px;
+  }
+
+  .hiw-logo {
+    max-width: 220px;
+  }
+
+  .hiw-tagline {
+    font-size: 24px;
+  }
+
+  .cta-buttons {
+    flex-direction: column;
+  }
+
+  .cta-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Flame, Wallet, Check, ChevronDown, AlertCircle, Gem, Zap,
+  Flame, Wallet, Check, ChevronDown, AlertCircle, Gem, Zap, BookOpen,
   ExternalLink, Copy, LogOut, Menu, Droplets, Coffee, Sun, Moon
 } from 'lucide-react';
 import { ethers } from 'ethers';
@@ -143,6 +143,12 @@ function Header({ onNavigate, currentPage = 'stake' }) {
                       onClick={() => { onNavigate('burn'); setShowNavMenu(false); }}
                     >
                       <Zap size={18} /> Burn XEN for Tickets
+                    </button>
+                    <button
+                      className={`nav-item ${currentPage === 'howitworks' ? 'active' : ''}`}
+                      onClick={() => { onNavigate('howitworks'); setShowNavMenu(false); }}
+                    >
+                      <BookOpen size={18} /> How It Works
                     </button>
                   </div>
 

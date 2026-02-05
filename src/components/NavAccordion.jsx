@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Gem, Flame, ChevronDown, ChevronUp } from 'lucide-react';
+import { Lock, Gem, Flame, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { useForgeData } from '../hooks/useForgeData';
 import './NavAccordion.css';
 
@@ -115,7 +115,7 @@ function NavAccordion({ currentPage, onNavigate }) {
             <span className="nav-arrow">→</span>
           )}
         </div>
-        
+
         {expandedCard === 'burn' && (
           <div className="accordion-content">
             <p>Burn XEN in batches of 2.5M to earn tickets for GOLD distribution.</p>
@@ -129,6 +129,36 @@ function NavAccordion({ currentPage, onNavigate }) {
                 <span className="value">10K batches</span>
               </div>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* How It Works */}
+      <div
+        className={`accordion-card clickable ${currentPage === 'howitworks' ? 'active' : ''} ${expandedCard === 'howitworks' ? 'expanded' : ''}`}
+        onClick={() => handleCardClick('howitworks', 'howitworks')}
+      >
+        <div className="accordion-header">
+          <div className="accordion-title">
+            <BookOpen size={18} />
+            <span>HOW IT WORKS</span>
+            <span className="accordion-badge">GUIDE</span>
+          </div>
+          {currentPage === 'howitworks' ? (
+            expandedCard === 'howitworks' ? <ChevronUp size={18} /> : <ChevronDown size={18} />
+          ) : (
+            <span className="nav-arrow">→</span>
+          )}
+        </div>
+
+        {expandedCard === 'howitworks' && (
+          <div className="accordion-content">
+            <p>Learn how the DXN Forge ecosystem works with detailed explanations and flow diagrams.</p>
+            <ul className="accordion-benefits">
+              <li>📊 Protocol flow diagram</li>
+              <li>💡 Staking & burning explained</li>
+              <li>🎫 Tickets & GOLD distribution</li>
+            </ul>
           </div>
         )}
       </div>

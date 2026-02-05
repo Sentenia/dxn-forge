@@ -7,6 +7,7 @@ import BigCards from './components/BigCards';
 import UserActions from './components/UserActions';
 import LongTermStaking from './components/LongTermStaking';
 import BurnXEN from './components/BurnXEN';
+import HowItWorks from './components/HowItWorks';
 import Footer from './components/Footer';
 import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import './styles/Dashboard.css';
@@ -36,38 +37,74 @@ function App() {
   };
 
   // Swipe navigation for mobile/tablet
-  const { pages, currentIndex, isEnabled: swipeEnabled } = useSwipeNavigation(currentPage, handleNavigation);
+  const {
+    pages,
+    currentIndex,
+    isEnabled: swipeEnabled,
+    isDragging,
+    incomingPage,
+    containerRef,
+    currentPageRef,
+    incomingPageRef,
+  } = useSwipeNavigation(currentPage, handleNavigation);
 
   const pageLabels = {
     stake: 'Stake & Forge',
     longterm: 'Long-Term Staking',
-    burn: 'Burn XEN'
+    burn: 'Burn XEN',
+    howitworks: 'How It Works'
   };
 
-  return (
-    <div className="app-wrapper">
-      <Header onNavigate={handleNavigation} currentPage={currentPage} />
-
-      <div className={`page-content page-${currentPage}`}>
-        {currentPage === 'stake' && (
+  // Render page content by page name
+  const renderPageContent = (pageName) => {
+    switch (pageName) {
+      case 'stake':
+        return (
           <div className="container">
             <Hero onNavigate={handleNavigation} />
             <InfoCards />
             <BigCards />
             <UserActions />
           </div>
-        )}
-
-        {currentPage === 'longterm' && (
+        );
+      case 'longterm':
+        return (
           <LongTermStaking
             onNavigate={handleNavigation}
             provider={provider}
             account={account}
           />
-        )}
+        );
+      case 'burn':
+        return <BurnXEN onNavigate={handleNavigation} />;
+      case 'howitworks':
+        return <HowItWorks onNavigate={handleNavigation} />;
+      default:
+        return null;
+    }
+  };
 
-        {currentPage === 'burn' && (
-          <BurnXEN onNavigate={handleNavigation} />
+  return (
+    <div className="app-wrapper">
+      <Header onNavigate={handleNavigation} currentPage={currentPage} />
+
+      <div ref={containerRef} className="page-viewport">
+        {/* Current page */}
+        <div
+          ref={currentPageRef}
+          className={`page-content page-${currentPage}`}
+        >
+          {renderPageContent(currentPage)}
+        </div>
+
+        {/* Incoming page (only rendered during drag) */}
+        {incomingPage && (
+          <div
+            ref={incomingPageRef}
+            className={`page-content page-incoming page-${incomingPage}`}
+          >
+            {renderPageContent(incomingPage)}
+          </div>
         )}
       </div>
 
