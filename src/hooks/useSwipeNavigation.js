@@ -1,16 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 const PAGES = ['stake', 'longterm', 'burn'];
 const MIN_SWIPE_DISTANCE = 50;
 const MAX_SCREEN_WIDTH = 1024;
 
 export function useSwipeNavigation(currentPage, onNavigate) {
-  const [dragOffset, setDragOffset] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const [isSwiping, setIsSwiping] = useState(false);
   const [isEnabled, setIsEnabled] = useState(false);
-
-  const touchStartX = useRef(null);
-  const containerRef = useRef(null);
 
   // Check screen width and enable/disable swipe
   useEffect(() => {
@@ -27,87 +25,57 @@ export function useSwipeNavigation(currentPage, onNavigate) {
 
   const handleTouchStart = useCallback((e) => {
     if (!isEnabled) return;
-    touchStartX.current = e.touches[0].clientX;
-    setIsDragging(true);
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+    setIsSwiping(true);
   }, [isEnabled]);
 
   const handleTouchMove = useCallback((e) => {
-    if (!isEnabled || !isDragging || touchStartX.current === null) return;
-
-    const currentX = e.touches[0].clientX;
-    const diff = currentX - touchStartX.current;
-
-    // Limit drag at edges (add resistance)
-    const atLeftEdge = currentIndex === 0 && diff > 0;
-    const atRightEdge = currentIndex === PAGES.length - 1 && diff < 0;
-
-    if (atLeftEdge || atRightEdge) {
-      // Add rubber-band resistance at edges
-      setDragOffset(diff * 0.3);
-    } else {
-      setDragOffset(diff);
-    }
-  }, [isEnabled, isDragging, currentIndex]);
+    if (!isEnabled || !isSwiping) return;
+    setTouchEnd(e.targetTouches[0].clientX);
+  }, [isEnabled, isSwiping]);
 
   const handleTouchEnd = useCallback(() => {
-    if (!isEnabled || !isDragging) {
-      setIsDragging(false);
+    if (!isEnabled || !touchStart || !touchEnd) {
+      setIsSwiping(false);
       return;
     }
 
-    const shouldGoNext = dragOffset < -MIN_SWIPE_DISTANCE && currentIndex < PAGES.length - 1;
-    const shouldGoPrev = dragOffset > MIN_SWIPE_DISTANCE && currentIndex > 0;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > MIN_SWIPE_DISTANCE;
+    const isRightSwipe = distance < -MIN_SWIPE_DISTANCE;
 
-    if (shouldGoNext) {
+    if (isLeftSwipe && currentIndex < PAGES.length - 1) {
+      // Swipe left = next page
       onNavigate(PAGES[currentIndex + 1]);
-    } else if (shouldGoPrev) {
+    } else if (isRightSwipe && currentIndex > 0) {
+      // Swipe right = previous page
       onNavigate(PAGES[currentIndex - 1]);
     }
 
-    // Reset drag state
-    setDragOffset(0);
-    setIsDragging(false);
-    touchStartX.current = null;
-  }, [isEnabled, isDragging, dragOffset, currentIndex, onNavigate]);
+    setTouchStart(null);
+    setTouchEnd(null);
+    setIsSwiping(false);
+  }, [isEnabled, touchStart, touchEnd, currentIndex, onNavigate]);
 
-  // Attach touch listeners
+  // Attach touch listeners to document
   useEffect(() => {
-    const container = containerRef.current;
-    if (!isEnabled || !container) return;
+    if (!isEnabled) return;
 
-    container.addEventListener('touchstart', handleTouchStart, { passive: true });
-    container.addEventListener('touchmove', handleTouchMove, { passive: true });
-    container.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
 
     return () => {
-      container.removeEventListener('touchstart', handleTouchStart);
-      container.removeEventListener('touchmove', handleTouchMove);
-      container.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
     };
   }, [isEnabled, handleTouchStart, handleTouchMove, handleTouchEnd]);
-
-  // Calculate transform for the pages container
-  const getContainerStyle = useCallback(() => {
-    if (!isEnabled) {
-      return {};
-    }
-
-    const baseOffset = -currentIndex * 100; // percentage
-    const dragPercent = (dragOffset / window.innerWidth) * 100;
-
-    return {
-      transform: `translateX(calc(${baseOffset}% + ${dragOffset}px))`,
-      transition: isDragging ? 'none' : 'transform 0.3s cubic-bezier(0, 0, 0.2, 1)',
-    };
-  }, [isEnabled, currentIndex, dragOffset, isDragging]);
 
   return {
     pages: PAGES,
     currentIndex,
     isEnabled,
-    isDragging,
-    dragOffset,
-    containerRef,
-    getContainerStyle,
   };
 }

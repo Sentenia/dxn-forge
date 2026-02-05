@@ -36,14 +36,7 @@ function App() {
   };
 
   // Swipe navigation for mobile/tablet
-  const {
-    pages,
-    currentIndex,
-    isEnabled: swipeEnabled,
-    isDragging,
-    containerRef,
-    getContainerStyle,
-  } = useSwipeNavigation(currentPage, handleNavigation);
+  const { pages, currentIndex, isEnabled: swipeEnabled } = useSwipeNavigation(currentPage, handleNavigation);
 
   const pageLabels = {
     stake: 'Stake & Forge',
@@ -55,64 +48,28 @@ function App() {
     <div className="app-wrapper">
       <Header onNavigate={handleNavigation} currentPage={currentPage} />
 
-      {/* Mobile/Tablet: Swipeable pages rendered side by side */}
-      {swipeEnabled ? (
-        <div className="swipe-viewport">
-          <div
-            ref={containerRef}
-            className={`swipe-container ${isDragging ? 'dragging' : ''}`}
-            style={getContainerStyle()}
-          >
-            {/* Page 1: Dashboard */}
-            <div className="swipe-page">
-              <div className="container">
-                <Hero onNavigate={handleNavigation} />
-                <InfoCards />
-                <BigCards />
-                <UserActions />
-              </div>
-            </div>
-
-            {/* Page 2: Long-Term Staking */}
-            <div className="swipe-page">
-              <LongTermStaking
-                onNavigate={handleNavigation}
-                provider={provider}
-                account={account}
-              />
-            </div>
-
-            {/* Page 3: Burn XEN */}
-            <div className="swipe-page">
-              <BurnXEN onNavigate={handleNavigation} />
-            </div>
+      <div className={`page-content page-${currentPage}`}>
+        {currentPage === 'stake' && (
+          <div className="container">
+            <Hero onNavigate={handleNavigation} />
+            <InfoCards />
+            <BigCards />
+            <UserActions />
           </div>
-        </div>
-      ) : (
-        /* Desktop: Conditional rendering (no swipe) */
-        <div className="page-content">
-          {currentPage === 'stake' && (
-            <div className="container">
-              <Hero onNavigate={handleNavigation} />
-              <InfoCards />
-              <BigCards />
-              <UserActions />
-            </div>
-          )}
+        )}
 
-          {currentPage === 'longterm' && (
-            <LongTermStaking
-              onNavigate={handleNavigation}
-              provider={provider}
-              account={account}
-            />
-          )}
+        {currentPage === 'longterm' && (
+          <LongTermStaking
+            onNavigate={handleNavigation}
+            provider={provider}
+            account={account}
+          />
+        )}
 
-          {currentPage === 'burn' && (
-            <BurnXEN onNavigate={handleNavigation} />
-          )}
-        </div>
-      )}
+        {currentPage === 'burn' && (
+          <BurnXEN onNavigate={handleNavigation} />
+        )}
+      </div>
 
       {/* Page Indicator Dots - only visible on mobile/tablet */}
       {swipeEnabled && (
