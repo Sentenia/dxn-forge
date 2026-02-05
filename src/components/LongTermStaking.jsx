@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
-import { 
-  Lock, 
-  Trophy, 
-  Coins, 
-  AlertTriangle, 
-  Gem, 
+import React, { useState, useEffect } from 'react';
+import {
+  Lock,
+  Trophy,
+  Coins,
+  AlertTriangle,
+  Gem,
   TrendingUp,
   Clock,
   CheckCircle,
   BarChart3,
   Loader,
   ExternalLink,
-  Flame
+  Flame,
+  XCircle
 } from 'lucide-react';
 import './LongTermStaking.css';
 import NavAccordion from './NavAccordion';
@@ -25,6 +26,10 @@ function LongTermStaking({ onNavigate, provider, account }) {
   const [showLockModal, setShowLockModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [commitMode, setCommitMode] = useState('single'); // 'single' or 'all'
+
+  // Toast and validation state
+  const [toast, setToast] = useState({ show: false, type: '', message: '' });
+  const [validationError, setValidationError] = useState('');
 
   const {
     loading,
@@ -59,6 +64,20 @@ function LongTermStaking({ onNavigate, provider, account }) {
     refreshData,
   } = useLTS(provider, account);
 
+  // Auto-hide toast after 3 seconds
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => {
+        setToast({ show: false, type: '', message: '' });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
+  const showToast = (type, message) => {
+    setToast({ show: true, type, message });
+  };
+
   const tiers = TIERS.map(t => ({
     ...t,
     weight: `${t.weight}x`,
@@ -78,16 +97,17 @@ function LongTermStaking({ onNavigate, provider, account }) {
   const canDeposit = isWindowOpen;
 
   const handleLock = (mode) => {
+    setValidationError('');
     if (!canDeposit) {
-      alert(`Deposit window is not open. Current cycle: ${currentCycle}`);
+      setValidationError(`Deposit window is closed. Current cycle: ${currentCycle}`);
       return;
     }
     if (!amount || Number(amount) <= 0) {
-      alert('Please enter a valid amount');
+      setValidationError('Please enter a valid amount');
       return;
     }
     if (Number(amount) > userBalances[lockType]) {
-      alert(`Insufficient ${lockType} balance`);
+      setValidationError(`Insufficient ${lockType} balance`);
       return;
     }
     setCommitMode(mode);
@@ -99,26 +119,24 @@ function LongTermStaking({ onNavigate, provider, account }) {
     setActionLoading(true);
     try {
       if (commitMode === 'all') {
-        // Use All function - splits across all tiers
         if (lockType === 'DXN') {
           await addDXNAllToLTS(amount);
         } else {
           await addGOLDAllToLTS(amount);
         }
-        alert(`✅ Successfully committed ${amount} ${lockType} across ALL tiers in Crucible ${currentCrucible}!`);
+        showToast('success', `Committed ${amount} ${lockType} across ALL tiers in Crucible ${currentCrucible}`);
       } else {
-        // Single tier
         if (lockType === 'DXN') {
           await addDXNToLTS(amount, selectedTier);
         } else {
           await addGOLDToLTS(amount, selectedTier);
         }
-        alert(`✅ Successfully committed ${amount} ${lockType} to ${TIERS[selectedTier].days}d tier in Crucible ${currentCrucible}!`);
+        showToast('success', `Committed ${amount} ${lockType} to ${TIERS[selectedTier].days}d tier`);
       }
       setAmount('');
     } catch (err) {
       console.error('Lock failed:', err);
-      alert(`❌ Failed to lock: ${err.reason || err.message}`);
+      showToast('error', `Failed to lock: ${err.reason || err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -128,10 +146,10 @@ function LongTermStaking({ onNavigate, provider, account }) {
     setActionLoading(true);
     try {
       await mintLTSNFTs();
-      alert('✅ NFTs minted successfully! Your positions are now tradeable.');
+      showToast('success', 'NFTs minted successfully! Your positions are now tradeable.');
     } catch (err) {
       console.error('Mint failed:', err);
-      alert(`❌ Failed to mint NFTs: ${err.reason || err.message}`);
+      showToast('error', `Failed to mint NFTs: ${err.reason || err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -139,16 +157,16 @@ function LongTermStaking({ onNavigate, provider, account }) {
 
   const handleClaim = async (nft) => {
     if (!nft.isMature) {
-      alert('This position is not mature yet.');
+      showToast('error', 'This position is not mature yet.');
       return;
     }
     setActionLoading(true);
     try {
       await claimLTS(nft.tokenId);
-      alert(`✅ Claimed ${nft.amount} ${nft.assetSymbol} + ${nft.claimableEth} ETH!`);
+      showToast('success', `Claimed ${nft.amount} ${nft.assetSymbol} + ${nft.claimableEth} ETH`);
     } catch (err) {
       console.error('Claim failed:', err);
-      alert(`❌ Failed to claim: ${err.reason || err.message}`);
+      showToast('error', `Failed to claim: ${err.reason || err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -158,10 +176,10 @@ function LongTermStaking({ onNavigate, provider, account }) {
     setActionLoading(true);
     try {
       await startNewCrucible();
-      alert(`✅ Crucible ${currentCrucible + 1} started! New deposit window is now open.`);
+      showToast('success', `Crucible ${currentCrucible + 1} started! New deposit window is now open.`);
     } catch (err) {
       console.error('Start crucible failed:', err);
-      alert(`❌ Failed to start new crucible: ${err.reason || err.message}`);
+      showToast('error', `Failed to start new crucible: ${err.reason || err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -413,17 +431,24 @@ function LongTermStaking({ onNavigate, provider, account }) {
                 type="number"
                 placeholder="0.0"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={(e) => { setAmount(e.target.value); setValidationError(''); }}
                 disabled={actionLoading}
+                className={validationError ? 'input-error' : ''}
               />
-              <button 
+              <button
                 className="max-btn"
-                onClick={() => setAmount(userBalances[lockType].toString())}
+                onClick={() => { setAmount(userBalances[lockType].toString()); setValidationError(''); }}
                 disabled={actionLoading}
               >
                 MAX
               </button>
             </div>
+            {validationError && (
+              <div className="validation-error">
+                <AlertTriangle size={14} />
+                {validationError}
+              </div>
+            )}
           </div>
 
           {/* Two Commit Buttons */}
@@ -690,6 +715,14 @@ function LongTermStaking({ onNavigate, provider, account }) {
         <div className="loading-overlay">
           <Loader className="spinner" size={48} />
           <p>Processing transaction...</p>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
+          <span>{toast.message}</span>
         </div>
       )}
     </div>

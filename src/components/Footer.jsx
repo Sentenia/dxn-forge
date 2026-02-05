@@ -1,17 +1,26 @@
-import React from 'react';
-import { Copy, FileText, Github, Flame, Twitter, Send, ChevronLeft, ChevronRight, ChevronUp } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Copy, FileText, Github, Flame, Twitter, Send, ChevronLeft, ChevronRight, ChevronUp, Check } from 'lucide-react';
 import './Footer.css';
 
 function Footer({ connectedChain = 'Ethereum', currentPage, onNavigate }) {
+  const [copyToast, setCopyToast] = useState(false);
+
   const contracts = {
     DXN: '0x80f0C1c49891dcFDD40b6e0F960F84E6042bcB6F',
     FORGE: '0x4EDdFE898bbD3B16Ed7b7fCA7F7f8490b1A22ACa',
     GOLD: '0x6106Bf468C15D999b7dE22e458A41E77a3FaDdDf',
   };
 
+  useEffect(() => {
+    if (copyToast) {
+      const timer = setTimeout(() => setCopyToast(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [copyToast]);
+
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    alert('Address copied!');
+    setCopyToast(true);
   };
 
   const prevPage = () => {
@@ -197,6 +206,14 @@ function Footer({ connectedChain = 'Ethereum', currentPage, onNavigate }) {
           Connected to {connectedChain}
         </div>
       </div>
+
+      {/* Copy Toast */}
+      {copyToast && (
+        <div className="copy-toast">
+          <Check size={16} />
+          <span>Address copied!</span>
+        </div>
+      )}
     </footer>
   );
 }

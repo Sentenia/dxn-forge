@@ -43,7 +43,7 @@ export function Web3Provider({ children }) {
   }, [signer, provider]);
 
   const connect = useCallback(async () => {
-    if (!window.ethereum) return alert('Install MetaMask');
+    if (!window.ethereum) return;
     const p = new BrowserProvider(window.ethereum);
     const accounts = await p.send('eth_requestAccounts', []);
     const network = await p.getNetwork();

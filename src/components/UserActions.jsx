@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { TrendingUp, Lock, Unlock, Info, Trophy, Gift, Coins, Ticket, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { TrendingUp, Lock, Unlock, Info, Trophy, Gift, Coins, Ticket, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { ethers } from 'ethers';
 import { useWallet } from '../hooks/useWallet';
 import { useForgeData } from '../hooks/useForgeData';
@@ -9,20 +9,33 @@ import { CONTRACTS, FORGE_ABI, ERC20_ABI } from '../contracts';
 function UserActions() {
   const { address, connected } = useWallet();
   const { user, protocol, refetch } = useForgeData();
-  
+
   // DXN staking state
   const [dxnTab, setDxnTab] = useState('stake');
   const [dxnAmount, setDxnAmount] = useState('');
   const [dxnLoading, setDxnLoading] = useState(false);
-  
+
   // GOLD staking state
   const [goldTab, setGoldTab] = useState('stake');
   const [goldAmount, setGoldAmount] = useState('');
   const [goldLoading, setGoldLoading] = useState(false);
-  
+
   // Claim loading
   const [claimLoading, setClaimLoading] = useState(false);
   const [pokeLoading, setPokeLoading] = useState(false);
+
+  // Toast state
+  const [toast, setToast] = useState({ show: false, type: '', message: '' });
+
+  // Auto-hide toast
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => setToast({ show: false, type: '', message: '' }), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
+  const showToast = (type, message) => setToast({ show: true, type, message });
 
   // Parse user data
   const userDxnBalance = parseFloat(user.dxnBalance) || 0;
@@ -70,7 +83,7 @@ function UserActions() {
         // Check allowance first
         const dxn = new ethers.Contract(CONTRACTS.tDXN, ERC20_ABI, signer);
         const allowance = await dxn.allowance(address, CONTRACTS.DXNForge);
-        
+
         if (allowance < amount) {
           const approveTx = await dxn.approve(CONTRACTS.DXNForge, ethers.MaxUint256);
           await approveTx.wait();
@@ -80,17 +93,20 @@ function UserActions() {
         const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
         const tx = await forge.stakeDXN(amount);
         await tx.wait();
+        showToast('success', `Staked ${dxnAmount} DXN`);
       } else {
         // Unstake
         const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
         const tx = await forge.unstakeDXN(amount);
         await tx.wait();
+        showToast('success', `Unstaked ${dxnAmount} DXN`);
       }
 
       setDxnAmount('');
       refetch();
     } catch (err) {
       console.error('DXN action error:', err);
+      showToast('error', `Failed: ${err.reason || err.message}`);
     } finally {
       setDxnLoading(false);
     }
@@ -117,7 +133,7 @@ function UserActions() {
         // Check allowance first
         const gold = new ethers.Contract(CONTRACTS.GOLDToken, ERC20_ABI, signer);
         const allowance = await gold.allowance(address, CONTRACTS.DXNForge);
-        
+
         if (allowance < amount) {
           const approveTx = await gold.approve(CONTRACTS.DXNForge, ethers.MaxUint256);
           await approveTx.wait();
@@ -127,17 +143,20 @@ function UserActions() {
         const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
         const tx = await forge.stakeGold(amount);
         await tx.wait();
+        showToast('success', `Staked ${goldAmount} GOLD`);
       } else {
         // Unstake
         const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
         const tx = await forge.unstakeGold(amount);
         await tx.wait();
+        showToast('success', `Unstaked ${goldAmount} GOLD`);
       }
 
       setGoldAmount('');
       refetch();
     } catch (err) {
       console.error('GOLD action error:', err);
+      showToast('error', `Failed: ${err.reason || err.message}`);
     } finally {
       setGoldLoading(false);
     }
@@ -152,9 +171,11 @@ function UserActions() {
       const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
       const tx = await forge.claimRewards();
       await tx.wait();
+      showToast('success', 'Rewards claimed successfully');
       refetch();
     } catch (err) {
       console.error('Claim error:', err);
+      showToast('error', `Claim failed: ${err.reason || err.message}`);
     } finally {
       setClaimLoading(false);
     }
@@ -169,9 +190,11 @@ function UserActions() {
       const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
       const tx = await forge.claimEth();
       await tx.wait();
+      showToast('success', 'ETH claimed successfully');
       refetch();
     } catch (err) {
       console.error('Claim ETH error:', err);
+      showToast('error', `Claim failed: ${err.reason || err.message}`);
     } finally {
       setClaimLoading(false);
     }
@@ -186,9 +209,11 @@ function UserActions() {
       const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
       const tx = await forge.sync();
       await tx.wait();
+      showToast('success', 'Synced successfully');
       refetch();
     } catch (err) {
       console.error('Poke error:', err);
+      showToast('error', `Sync failed: ${err.reason || err.message}`);
     } finally {
       setPokeLoading(false);
     }
@@ -458,14 +483,22 @@ function UserActions() {
           </div>
         </div>
 
-        <button 
-          className="action-button" 
+        <button
+          className="action-button"
           onClick={handleClaimRewards}
           disabled={claimLoading || !connected}
         >
           {claimLoading ? 'Processing...' : 'Claim All Rewards'}
         </button>
       </div>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
+          <span>{toast.message}</span>
+        </div>
+      )}
     </div>
   );
 }

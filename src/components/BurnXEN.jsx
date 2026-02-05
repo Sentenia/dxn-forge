@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Calendar, Ticket, Award, DollarSign, Coins, Info, Lightbulb, TrendingDown } from 'lucide-react';
+import { Flame, Calendar, Ticket, Award, DollarSign, Coins, Info, Lightbulb, TrendingDown, CheckCircle, XCircle } from 'lucide-react';
 import { ethers } from 'ethers';
 import NavAccordion from './NavAccordion';
 import { useWallet } from '../hooks/useWallet';
@@ -10,7 +10,7 @@ import './BurnXEN.css';
 function BurnXEN({ onNavigate }) {
   const { address, connected } = useWallet();
   const { protocol, user, refetch } = useForgeData();
-  
+
   const [batches, setBatches] = useState(1);
   const [loading, setLoading] = useState(false);
   const [burnStats, setBurnStats] = useState({
@@ -23,6 +23,17 @@ function BurnXEN({ onNavigate }) {
     discount: 0,
   });
   const [xenBalance, setXenBalance] = useState('0');
+  const [toast, setToast] = useState({ show: false, type: '', message: '' });
+
+  // Auto-hide toast
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => setToast({ show: false, type: '', message: '' }), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
+  const showToast = (type, message) => setToast({ show: true, type, message });
 
   // Constants
   const xenPerBatch = 2500000;
@@ -101,7 +112,10 @@ function BurnXEN({ onNavigate }) {
 
     // Check XEN balance
     const requiredXen = batches * xenPerBatch;
-    if (parseFloat(xenBalance) * 1e18 < requiredXen * 1e18) return;
+    if (parseFloat(xenBalance) * 1e18 < requiredXen * 1e18) {
+      showToast('error', 'Insufficient XEN balance');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -113,7 +127,7 @@ function BurnXEN({ onNavigate }) {
       // Check allowance
       const allowance = await xen.allowance(address, CONTRACTS.DXNForge);
       const requiredAmount = ethers.parseEther((batches * xenPerBatch).toString());
-      
+
       if (allowance < requiredAmount) {
         const approveTx = await xen.approve(CONTRACTS.DXNForge, ethers.MaxUint256);
         await approveTx.wait();
@@ -121,13 +135,14 @@ function BurnXEN({ onNavigate }) {
 
       // Calculate fee
       const [fee] = await forge.calcFee(batches);
-      
+
       // Burn XEN
       const tx = await forge.burnXEN(batches, { value: fee });
       await tx.wait();
-      
+
+      showToast('success', `Burned ${(batches * xenPerBatch).toLocaleString()} XEN for ${ticketsEarned.toFixed(4)} tickets`);
       refetch();
-      
+
       // Refresh burn stats
       const [totalBurned, userBurned] = await Promise.all([
         forge.xenBurned(),
@@ -138,9 +153,10 @@ function BurnXEN({ onNavigate }) {
         totalXenBurned: parseFloat(ethers.formatEther(totalBurned)),
         userXenBurned: parseFloat(ethers.formatEther(userBurned)),
       }));
-      
+
     } catch (err) {
       console.error('Burn error:', err);
+      showToast('error', `Burn failed: ${err.reason || err.message}`);
     } finally {
       setLoading(false);
     }
@@ -380,6 +396,14 @@ function BurnXEN({ onNavigate }) {
           </div>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
+          <span>{toast.message}</span>
+        </div>
+      )}
     </div>
   );
 }

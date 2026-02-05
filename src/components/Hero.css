@@ -617,27 +617,47 @@
     justify-content: center;
   }
 
-  .hero-stat-card {
-    min-width: 140px;
-    padding: 10px 12px;
-  }
-
-  .hero-stat-value {
-    font-size: 14px;
-  }
-
-  .hero-stat-label {
-    font-size: 9px;
-  }
-}
-
-@media (max-width: 480px) {
-  .hero-stats-group {
+  /* Mobile 2-column grid layout for stats */
+  .hero-title-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
     gap: 8px;
   }
 
+  /* Title spans full width on first row */
+  .hero-title {
+    grid-column: 1 / -1;
+    order: 0;
+    margin-bottom: 16px;
+  }
+
+  /* Left column: Protocol stats */
+  .hero-stats-left {
+    grid-column: 1;
+    grid-row: 2;
+    order: 1;
+    justify-self: stretch;
+    flex-direction: column;
+  }
+
+  /* Right column: Personal stats */
+  .hero-stats-right {
+    grid-column: 2;
+    grid-row: 2;
+    order: 2;
+    justify-self: stretch;
+    flex-direction: column;
+  }
+
+  .hero-stats-group {
+    gap: 6px;
+  }
+
+  /* Compact card styling */
   .hero-stat-card {
-    min-width: 130px;
+    min-width: unset;
+    width: 100%;
     padding: 8px 10px;
     gap: 8px;
   }
@@ -645,6 +665,34 @@
   .hero-stat-icon {
     width: 14px;
     height: 14px;
+  }
+
+  .hero-stat-value {
+    font-size: 13px;
+  }
+
+  .hero-stat-label {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-stat-card {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .hero-stat-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .hero-stat-value {
+    font-size: 12px;
+  }
+
+  .hero-stat-label {
+    font-size: 7px;
   }
 
   .hero-stat-value {

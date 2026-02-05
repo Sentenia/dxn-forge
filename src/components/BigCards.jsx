@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Coins, Lock, LockKeyhole, Flame, Zap, Trophy } from 'lucide-react';
+import { Coins, Lock, LockKeyhole, Flame, Zap, Trophy, CheckCircle, XCircle } from 'lucide-react';
 import { ethers } from 'ethers';
 import { useWallet } from '../hooks/useWallet';
 import { useForgeData } from '../hooks/useForgeData';
@@ -8,12 +8,23 @@ import { CONTRACTS, FORGE_ABI, MOCK_DBXEN_ABI } from '../contracts';
 function BigCards() {
   const { address, connected } = useWallet();
   const { protocol, refetch } = useForgeData();
-  
+
   const [burnPercentage, setBurnPercentage] = useState(100);
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [claimLoading, setClaimLoading] = useState(false);
   const [burnLoading, setBurnLoading] = useState(false);
   const [claimError, setClaimError] = useState('');
+  const [toast, setToast] = useState({ show: false, type: '', message: '' });
+
+  // Auto-hide toast
+  useEffect(() => {
+    if (toast.show) {
+      const timer = setTimeout(() => setToast({ show: false, type: '', message: '' }), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.show]);
+
+  const showToast = (type, message) => setToast({ show: true, type, message });
 
 
   // Calculate cooldown
@@ -53,34 +64,34 @@ function BigCards() {
 
   const handleClaimETH = async () => {
     if (!connected) return;
-    
+
     setClaimLoading(true);
     setClaimError('');
     try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const signer = await provider.getSigner();
-        const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
-        
-        const tx = await forge.claimFees();
-        await tx.wait();
-        refetch();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
+
+      const tx = await forge.claimFees();
+      await tx.wait();
+      showToast('success', 'ETH claimed to Forge vault');
+      refetch();
     } catch (err) {
-        console.error('Claim error:', err);
-        // Decode common errors
-        const errorData = err.data || '';
-        if (errorData.includes('3dc61b4a')) {
+      console.error('Claim error:', err);
+      const errorData = err.data || '';
+      if (errorData.includes('3dc61b4a')) {
         setClaimError('Must wait for next DBXen cycle');
-        } else if (errorData.includes('Cooldown') || err.message?.includes('Cooldown')) {
+      } else if (errorData.includes('Cooldown') || err.message?.includes('Cooldown')) {
         setClaimError('24h cooldown not passed');
-        } else if (errorData.includes('NoEth') || err.message?.includes('NoEth')) {
+      } else if (errorData.includes('NoEth') || err.message?.includes('NoEth')) {
         setClaimError('Not enough ETH to claim');
-        } else {
+      } else {
         setClaimError('Claim failed - try again later');
-        }
+      }
     } finally {
-        setClaimLoading(false);
+      setClaimLoading(false);
     }
-    };
+  };
 
   const handleBuyAndBurn = async () => {
     if (!connected || availableETH === 0 || protocol.ticketsThisEpoch === 0) return;
@@ -90,15 +101,17 @@ function BigCards() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
       const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
-      
+
       // Calculate amount to burn (0 = burn all)
       const amountToBurn = burnPercentage === 100 ? 0 : ethers.parseEther(ethToBurn.toString());
-      
+
       const tx = await forge.buyAndBurn(amountToBurn, 0);
       await tx.wait();
+      showToast('success', 'Buy & Burn executed - epoch ended');
       refetch();
     } catch (err) {
       console.error('Buy & Burn error:', err);
+      showToast('error', `Buy & Burn failed: ${err.reason || err.message}`);
     } finally {
       setBurnLoading(false);
     }
@@ -283,6 +296,14 @@ function BigCards() {
           <div className="bnb-warning">No tickets this epoch yet.</div>
         )}
       </div>
+
+      {/* Toast Notification */}
+      {toast.show && (
+        <div className={`toast-notification ${toast.type}`}>
+          {toast.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
+          <span>{toast.message}</span>
+        </div>
+      )}
     </div>
   );
 }
