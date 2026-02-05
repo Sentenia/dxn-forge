@@ -151,6 +151,8 @@ export function useForgeData() {
         }
       }
 
+      console.log('TICKETS DEBUG:', ticketsThisEpoch.toString(), stakerTixEpoch.toString(), ethers.formatEther(ticketsThisEpoch), Number(ethers.formatEther(ticketsThisEpoch)));
+
       setProtocol({
         currentEpoch: Number(currentEpoch),
         currentCycle: Number(currentCycle),

@@ -15,6 +15,21 @@ function InfoCards() {
     return val.toLocaleString(undefined, { maximumFractionDigits: decimals });
   };
 
+  // Format tickets with specific decimal places
+  const fmtTickets = (num, decimals = 4) => {
+    const val = parseFloat(num);
+    if (isNaN(val)) return '0';
+    if (val === 0) return '0';
+    return val.toFixed(decimals);
+  };
+
+  // Format whole numbers (for staker tickets)
+  const fmtWhole = (num) => {
+    const val = parseFloat(num);
+    if (isNaN(val)) return '0';
+    return Math.floor(val).toLocaleString();
+  };
+
   const getBonus = (epoch) => {
     if (epoch <= 25) {
       const multiplier = 10 - ((epoch - 1) * (9 / 24));
@@ -76,16 +91,16 @@ function InfoCards() {
           <Ticket size={16} />
           <span>Tickets This Epoch</span>
         </div>
-        <div className="stat-value">{fmt(protocol.ticketsThisEpoch)}</div>
+        <div className="stat-value">{fmtTickets(protocol.ticketsThisEpoch, 4)}</div>
         <div className="stat-footer split">
           <span className="stat-mini">
             <Ticket size={11} />
-            Staker {fmt(protocol.stakerTickets, 2)}
+            Staker {fmtWhole(protocol.stakerTickets)}
           </span>
           <span className="stat-divider" />
           <span className="stat-mini fire">
             <Flame size={11} />
-            Burner {fmt(protocol.burnerTickets, 2)}
+            Burner {fmtTickets(protocol.burnerTickets, 4)}
           </span>
         </div>
       </div>

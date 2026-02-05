@@ -107,6 +107,14 @@ function BurnXEN({ onNavigate }) {
     return parseFloat(num).toLocaleString(undefined, { maximumFractionDigits: 4 });
   };
 
+  // Format tickets with fixed decimal places (won't round small values to 0)
+  const fmtTickets = (num, decimals = 4) => {
+    const val = parseFloat(num);
+    if (isNaN(val)) return '0';
+    if (val === 0) return '0';
+    return val.toFixed(decimals);
+  };
+
   const handleBurn = async () => {
     if (!connected) return;
 
@@ -210,7 +218,7 @@ function BurnXEN({ onNavigate }) {
             <Ticket size={20} className="burn-card-icon" />
             <span>Epoch Tickets</span>
           </div>
-          <div className="burn-card-value">{formatNumber(protocol.ticketsThisEpoch)}</div>
+          <div className="burn-card-value">{fmtTickets(protocol.ticketsThisEpoch, 4)}</div>
           <div className="burn-card-label">This epoch total</div>
         </div>
 

@@ -62,6 +62,14 @@ function BigCards() {
     return val.toLocaleString(undefined, { maximumFractionDigits: 4 });
   };
 
+  // Format tickets with fixed decimal places
+  const fmtTickets = (num, decimals = 4) => {
+    const val = parseFloat(num);
+    if (isNaN(val)) return '0';
+    if (val === 0) return '0';
+    return val.toFixed(decimals);
+  };
+
   const handleClaimETH = async () => {
     if (!connected) return;
 
@@ -250,7 +258,7 @@ function BigCards() {
           
           <div className="bnb-stat-row">
             <span className="bnb-label">Tickets This Epoch</span>
-            <span className="bnb-value">{formatNumber(protocol.ticketsThisEpoch)}</span>
+            <span className="bnb-value">{fmtTickets(protocol.ticketsThisEpoch, 4)}</span>
           </div>
 
           <div className="bnb-stat-row highlight">
