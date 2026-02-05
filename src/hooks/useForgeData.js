@@ -23,6 +23,7 @@ export function useForgeData() {
     totalAutoStakedGold: '0',
     totalManualGoldStaked: '0',
     goldSupply: '0',
+    goldTotalSupply: '0',
     ticketsThisEpoch: 0,
     stakerTickets: 0,
     burnerTickets: 0,
@@ -34,6 +35,7 @@ export function useForgeData() {
     forgeBalance: '0',
     goldStakersPool: '0',
     xenFees: '0',
+    totalXenBurned: '0',
   });
   const [user, setUser] = useState({
     dxnBalance: '0',
@@ -111,6 +113,8 @@ export function useForgeData() {
         allocLts,
         totEthDist,
         xenFees,
+        goldTotalSupply,
+        totalXenBurned,
       ] = await Promise.all([
         forge.canFee(),
         forge.lastFeeTime(),
@@ -122,6 +126,8 @@ export function useForgeData() {
         forge.allocLts(),
         forge.totEthDist(),
         forge.xenFees(),
+        gold.totalSupply(),
+        forge.xenBurned(),
       ]);
 
       // Undistributed ETH sitting in Forge (xen burn fees etc.)
@@ -161,12 +167,14 @@ export function useForgeData() {
         lastClaimFeesTime: Number(lastFeeTime),
         claimableEth: ethers.formatEther(claimableTotal),
         goldSupply: ethers.formatEther(totalGoldMinted),
+        goldTotalSupply: ethers.formatEther(goldTotalSupply),
         globalLtsDXN: ethers.formatEther(globalLtsDXN),
         globalLtsGold: ethers.formatEther(globalLtsGold),
         pendingLts: ethers.formatEther(pendingLts),
         forgeBalance: ethers.formatEther(forgeBalance),
         goldStakersPool: ethers.formatEther(totEthDist),
         xenFees: ethers.formatEther(xenFees),
+        totalXenBurned: ethers.formatEther(totalXenBurned),
       });
 
       // Fetch user data if connected — uses separate RPC to avoid throttling

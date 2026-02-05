@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Zap, Gem, ChevronDown, ChevronUp, Lock, Flame } from 'lucide-react';
+import { Clock, Zap, Gem, ChevronDown, ChevronUp, Lock, Flame, Coins, Percent, Droplets } from 'lucide-react';
 import { useForgeData } from '../hooks/useForgeData';
 import './Hero.css';
 
 function Hero({ onNavigate }) {
-  const { protocol } = useForgeData();
+  const { protocol, user } = useForgeData();
   const [countdown, setCountdown] = useState('00:00:00');
   const [expandedCard, setExpandedCard] = useState(null);
 
@@ -51,16 +51,88 @@ function Hero({ onNavigate }) {
     setExpandedCard(expandedCard === card ? null : card);
   };
 
+  // Calculate user's total GOLD holdings
+  const userTotalGold =
+    parseFloat(user.goldBalance || 0) +
+    parseFloat(user.autoStakedGold || 0) +
+    parseFloat(user.manualGoldStaked || 0);
+
+  // Calculate percentage of total supply
+  const goldSupply = parseFloat(protocol.goldTotalSupply || 0);
+  const userGoldPercent = goldSupply > 0 ? (userTotalGold / goldSupply) * 100 : 0;
+
+  // Format large numbers
+  const formatNumber = (num, decimals = 2) => {
+    const n = parseFloat(num);
+    if (n >= 1e9) return (n / 1e9).toFixed(decimals) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(decimals) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(decimals) + 'K';
+    return n.toFixed(decimals);
+  };
+
   return (
     <div className="hero-section">
-      {/* Title Section */}
-      <div className="hero-title">
-        <h1>DXN Forge</h1>
-        <p>Stake your DXN to Mint DXN GOLD</p>
-        <div className="countdown-timer">
-          <Clock size={20} className="timer-icon" />
-          <span>Claim fees in:</span>
-          <span className="timer-value">{countdown}</span>
+      {/* Title Section with Flanking Stats */}
+      <div className="hero-title-container">
+        {/* Left Stats: Protocol */}
+        <div className="hero-stats-group hero-stats-left">
+          <div className="hero-stat-card">
+            <Lock size={16} className="hero-stat-icon" />
+            <div className="hero-stat-content">
+              <span className="hero-stat-label">Total DXN Staked</span>
+              <span className="hero-stat-value">{formatNumber(protocol.totalDXNStaked)}</span>
+            </div>
+          </div>
+          <div className="hero-stat-card">
+            <Flame size={16} className="hero-stat-icon fire" />
+            <div className="hero-stat-content">
+              <span className="hero-stat-label">Total DXN Burned</span>
+              <span className="hero-stat-value">{formatNumber(protocol.goldTotalSupply)}</span>
+            </div>
+          </div>
+          <div className="hero-stat-card">
+            <Flame size={16} className="hero-stat-icon xen" />
+            <div className="hero-stat-content">
+              <span className="hero-stat-label">Total XEN Burned</span>
+              <span className="hero-stat-value">{formatNumber(protocol.totalXenBurned)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Center Title */}
+        <div className="hero-title">
+          <h1>DXN Forge</h1>
+          <p>Stake your DXN to Mint DXN GOLD</p>
+          <div className="countdown-timer">
+            <Clock size={20} className="timer-icon" />
+            <span>Claim fees in:</span>
+            <span className="timer-value">{countdown}</span>
+          </div>
+        </div>
+
+        {/* Right Stats: User GOLD */}
+        <div className="hero-stats-group hero-stats-right">
+          <div className="hero-stat-card">
+            <Coins size={16} className="hero-stat-icon gold" />
+            <div className="hero-stat-content">
+              <span className="hero-stat-label">Your GOLD</span>
+              <span className="hero-stat-value gold">{formatNumber(userTotalGold, 4)}</span>
+            </div>
+          </div>
+          <div className="hero-stat-card">
+            <Percent size={16} className="hero-stat-icon gold" />
+            <div className="hero-stat-content">
+              <span className="hero-stat-label">Supply Share</span>
+              <span className="hero-stat-value gold">{userGoldPercent.toFixed(4)}%</span>
+            </div>
+          </div>
+          <div className="hero-stat-card">
+            <Droplets size={16} className="hero-stat-icon eth" />
+            <div className="hero-stat-content">
+              <span className="hero-stat-label">Claimable ETH</span>
+              <span className="hero-stat-value eth">{parseFloat(user.pendingEth || 0).toFixed(6)}</span>
+            </div>
+          </div>
         </div>
       </div>
 
