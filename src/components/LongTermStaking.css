@@ -1316,7 +1316,7 @@
 
 @media (max-width: 768px) {
   .longterm-hero h1 { font-size: 36px; }
-  .tier-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .tier-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .tiers-grid { grid-template-columns: repeat(2, 1fr); }
   .tier-info { grid-template-columns: 1fr; }
   .longterm-page .works-grid { grid-template-columns: 1fr; }
@@ -1331,9 +1331,51 @@
   .marketplace-links { flex-direction: column; }
   .longterm-page .input-wrapper { flex-wrap: wrap; }
   .longterm-page .input-wrapper input { width: 100%; }
+
+  /* Tier stat cards - better mobile sizing */
+  .tier-stat-card { padding: 14px 10px; }
+  .tier-stat-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 6px 0;
+  }
+  .tier-stat-value {
+    font-size: 13px;
+    word-break: break-all;
+  }
+  .tier-stat-label { font-size: 11px; }
+  .tier-badge-stat { font-size: 16px; }
+  .tier-weight-stat { font-size: 14px; }
+  .tier-share-stat { font-size: 11px; }
 }
 
 @media (max-width: 600px) {
   .nfts-grid { grid-template-columns: 1fr; }
   .nft-art { height: 150px; }
+
+  /* Main stats grid values */
+  .longterm-page .stat-value {
+    font-size: 22px;
+    word-break: break-all;
+  }
+  .longterm-page .stat-label { font-size: 11px; }
+}
+
+@media (max-width: 480px) {
+  /* Even smaller screens - stack tier stats grid to single column */
+  .tier-stats-grid { grid-template-columns: 1fr; gap: 10px; }
+  .tier-stat-card { padding: 16px; }
+  .tier-stat-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .tier-stat-value { font-size: 14px; }
+
+  /* Main stats - ensure values don't clip */
+  .main-stats-grid { grid-template-columns: 1fr; gap: 12px; }
+  .longterm-page .stat-card { padding: 16px; }
+  .longterm-page .stat-value { font-size: 24px; }
+  .longterm-page .stat-icon { font-size: 32px; }
 }
