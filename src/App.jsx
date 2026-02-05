@@ -8,6 +8,7 @@ import UserActions from './components/UserActions';
 import LongTermStaking from './components/LongTermStaking';
 import BurnXEN from './components/BurnXEN';
 import Footer from './components/Footer';
+import { useSwipeNavigation } from './hooks/useSwipeNavigation';
 import './styles/Dashboard.css';
 
 function App() {
@@ -34,29 +35,55 @@ function App() {
     setCurrentPage(page);
   };
 
+  // Swipe navigation for mobile/tablet
+  const { pages, currentIndex, isEnabled: swipeEnabled } = useSwipeNavigation(currentPage, handleNavigation);
+
+  const pageLabels = {
+    stake: 'Stake & Forge',
+    longterm: 'Long-Term Staking',
+    burn: 'Burn XEN'
+  };
+
   return (
     <div className="app-wrapper">
       <Header onNavigate={handleNavigation} currentPage={currentPage} />
-      
-      {currentPage === 'stake' && (
-        <div className="container">
-          <Hero onNavigate={handleNavigation} />
-          <InfoCards />
-          <BigCards />
-          <UserActions />
+
+      <div className={`page-content page-${currentPage}`}>
+        {currentPage === 'stake' && (
+          <div className="container">
+            <Hero onNavigate={handleNavigation} />
+            <InfoCards />
+            <BigCards />
+            <UserActions />
+          </div>
+        )}
+
+        {currentPage === 'longterm' && (
+          <LongTermStaking
+            onNavigate={handleNavigation}
+            provider={provider}
+            account={account}
+          />
+        )}
+
+        {currentPage === 'burn' && (
+          <BurnXEN onNavigate={handleNavigation} />
+        )}
+      </div>
+
+      {/* Page Indicator Dots - only visible on mobile/tablet */}
+      {swipeEnabled && (
+        <div className="page-indicator">
+          {pages.map((page, index) => (
+            <button
+              key={page}
+              className={`page-dot ${currentIndex === index ? 'active' : ''}`}
+              onClick={() => handleNavigation(page)}
+              aria-label={pageLabels[page]}
+            />
+          ))}
+          <span className="page-indicator-label">{pageLabels[currentPage]}</span>
         </div>
-      )}
-
-      {currentPage === 'longterm' && (
-        <LongTermStaking 
-          onNavigate={handleNavigation} 
-          provider={provider} 
-          account={account} 
-        />
-      )}
-
-      {currentPage === 'burn' && (
-        <BurnXEN onNavigate={handleNavigation} />
       )}
 
       <Footer currentPage={currentPage} onNavigate={handleNavigation} />

@@ -1328,3 +1328,87 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Page Transitions ──────────────────────────── */
+.page-content {
+  animation: pageSlideIn 0.3s var(--ease-out);
+}
+
+@keyframes pageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ── Page Indicator (Mobile Swipe Navigation) ─── */
+.page-indicator {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(16, 16, 20, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  z-index: 100;
+  animation: fadeInUp 0.3s var(--ease-out);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.page-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all var(--t-fast);
+}
+
+.page-dot:hover {
+  background: var(--text-muted);
+  transform: scale(1.2);
+}
+
+.page-dot.active {
+  width: 24px;
+  border-radius: 4px;
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold-40);
+}
+
+.page-indicator-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+/* Hide page indicator on desktop */
+@media (min-width: 1024px) {
+  .page-indicator {
+    display: none;
+  }
+}
