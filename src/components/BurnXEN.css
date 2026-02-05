@@ -600,3 +600,27 @@
   .works-grid { grid-template-columns: 1fr; }
   .how-it-works-section h3 { font-size: 24px; }
 }
+
+.batch-input {
+  background: transparent;
+  border: none;
+  color: var(--gold);
+  font-size: 28px;
+  font-weight: 700;
+  font-family: var(--font);
+  text-align: center;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.batch-input::-webkit-outer-spin-button,
+.batch-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.batch-value {
+  cursor: text;
+}

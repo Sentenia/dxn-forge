@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Calendar, Ticket, Award, DollarSign, Coins } from 'lucide-react';
+import { Flame, Calendar, Ticket, Award, DollarSign, Coins, Info, Lightbulb, TrendingDown } from 'lucide-react';
 import { ethers } from 'ethers';
 import NavAccordion from './NavAccordion';
 import { useWallet } from '../hooks/useWallet';
@@ -224,7 +224,7 @@ function BurnXEN({ onNavigate }) {
             <div className="slider-header">
               <label>Number of Batches</label>
               <div className="info-icon-wrapper">
-                <span className="info-icon-trigger">ℹ️</span>
+                <span className="info-icon-trigger"><Info size={16} /></span>
                 <div className="info-tooltip">
                   Each batch burns 2.5M XEN. More batches in one transaction = bigger fee discount (up to 50% at 10,000 batches).
                 </div>
@@ -240,7 +240,20 @@ function BurnXEN({ onNavigate }) {
                 onChange={(e) => setBatches(parseInt(e.target.value))}
                 className="batch-slider"
               />
-              <div className="batch-value">{batches.toLocaleString()}</div>
+              <div className="batch-value">
+                <input
+                    type="number"
+                    inputMode="numeric"
+                    min="1"
+                    max="10000"
+                    value={batches}
+                    onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1;
+                    setBatches(Math.min(Math.max(val, 1), 10000));
+                    }}
+                    className="batch-input"
+                />
+                </div>
             </div>
 
             <div className="slider-minmax">
@@ -252,19 +265,19 @@ function BurnXEN({ onNavigate }) {
           {/* Stats Grid */}
           <div className="burn-stats-grid">
             <div className="burn-stat-item">
-              <span className="stat-icon">🔥</span>
-              <div className="stat-content">
+            <Flame size={20} className="stat-icon" />
+            <div className="stat-content">
                 <span className="stat-label">XEN to Burn</span>
                 <span className="stat-value">{(xenToBurn).toLocaleString()}</span>
-              </div>
+            </div>
             </div>
 
             <div className="burn-stat-item">
-              <span className="stat-icon">💰</span>
-              <div className="stat-content">
+            <TrendingDown size={20} className="stat-icon" />
+            <div className="stat-content">
                 <span className="stat-label">Batch Discount</span>
                 <span className="stat-value green">{feeData.discount.toFixed(2)}%</span>
-              </div>
+            </div>
             </div>
           </div>
 
@@ -302,9 +315,10 @@ function BurnXEN({ onNavigate }) {
 
           {/* Info Note */}
           <div className="burn-note">
-            💡 <strong>How it works:</strong> Tickets scale linearly: 1 batch = 0.0001 ticket, 10,000 batches = 1 ticket. 
+            <Lightbulb size={16} style={{display: 'inline', marginRight: '6px', marginBottom: '-3px'}} />
+            <strong>How it works:</strong> Tickets scale linearly: 1 batch = 0.0001 ticket, 10,000 batches = 1 ticket. 
             Tickets earn GOLD from the 8.88% buy & burn bucket. All GOLD is auto-staked and earns from 88% of protocol ETH fees.
-          </div>
+            </div>
         </div>
       </div>
 
