@@ -1345,6 +1345,34 @@
   }
 }
 
+/* ── Swipe Navigation (Mobile/Tablet) ──────────── */
+.swipe-viewport {
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+}
+
+.swipe-container {
+  display: flex;
+  width: 300%; /* 3 pages */
+  will-change: transform;
+  touch-action: pan-y pinch-zoom; /* Allow vertical scroll, prevent horizontal browser gestures */
+}
+
+.swipe-page {
+  width: 33.3333%; /* Each page = 100vw */
+  flex-shrink: 0;
+  min-height: calc(100vh - 140px); /* Account for header and footer */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Prevent text selection during swipe */
+.swipe-container.dragging {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 /* ── Page Indicator (Mobile Swipe Navigation) ─── */
 .page-indicator {
   position: fixed;
