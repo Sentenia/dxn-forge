@@ -161,6 +161,19 @@ body {
   transition: background-color var(--t), color var(--t);
 }
 
+/* Futuristic gold grid background */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(245, 166, 35, 0.15) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 166, 35, 0.15) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
+
 .app-wrapper {
   min-height: 100vh;
   position: relative;

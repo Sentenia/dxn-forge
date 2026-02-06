@@ -1343,7 +1343,7 @@
   width: 100%;
   max-width: 100vw;
   will-change: transform;
-  background: var(--bg-base);
+  background: transparent;
 }
 
 /* Incoming page during swipe - positioned absolutely */
