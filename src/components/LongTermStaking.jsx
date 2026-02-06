@@ -399,7 +399,7 @@ function LongTermStaking({ onNavigate, provider, account }) {
       </div>
 
       {/* Lock Interface */}
-      <div className="lock-interface">
+      <div id="lts-user-actions" className="lock-interface">
         <div className="lock-card">
           <div className="lock-header">
             <h3>Commit Tokens to Crucible {currentCrucible}</h3>

@@ -356,7 +356,7 @@ function HowItWorks({ onNavigate }) {
       </div>
 
       {/* Bottom CTA */}
-      <div className="hiw-cta">
+      <div id="hiw-bottom" className="hiw-cta">
         <h3>Ready to participate?</h3>
         <div className="cta-buttons">
           <button className="cta-btn primary" onClick={() => onNavigate('stake')}>

@@ -298,7 +298,56 @@
   50%      { opacity: 0.6; }
 }
 
+/* ── Footer Navigation Arrows ──────────────── */
+.footer-nav-arrows {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 16px;
+  border-top: 1px solid var(--border);
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.footer-arrow-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--t);
+}
+
+.footer-arrow-btn:hover {
+  background: var(--gold-15);
+  border-color: var(--gold-30);
+  color: var(--gold);
+}
+
+.footer-arrow-btn.up-btn {
+  padding: 12px 16px;
+}
+
+.arrow-label {
+  white-space: nowrap;
+}
+
 /* ── Responsive ─────────────────────────────── */
+
+/* Hide footer nav arrows on desktop (we have floating indicator) */
+@media (min-width: 1024px) {
+  .footer-nav-arrows.mobile-only {
+    display: none;
+  }
+}
+
 @media (max-width: 1024px) {
   .works-grid { grid-template-columns: 1fr; }
   .footer-content { grid-template-columns: 1fr; gap: 32px; }

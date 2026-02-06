@@ -148,8 +148,8 @@ function Footer({ connectedChain = 'Ethereum', currentPage, onNavigate }) {
         </div>
       </div>
 
-      {/* Navigation Arrows */}
-      <div className="footer-nav-arrows">
+      {/* Navigation Arrows - hidden on desktop, we have floating indicator now */}
+      <div className="footer-nav-arrows mobile-only">
         {prevPage() && (
           <button
             className="footer-arrow-btn"

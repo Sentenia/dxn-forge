@@ -233,7 +233,7 @@ function BurnXEN({ onNavigate }) {
       </div>
 
       {/* Burn Interface */}
-      <div className="burn-interface">
+      <div id="burn-user-actions" className="burn-interface">
         <div className="burn-card-large">
           <div className="burn-card-large-header">
             <Flame size={32} className="burn-header-icon" />

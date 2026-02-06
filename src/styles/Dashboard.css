@@ -1355,39 +1355,53 @@
   min-height: 100%;
 }
 
-/* ── Page Indicator (Mobile Swipe Navigation) ─── */
+/* ── Page Indicator ─────────────────────────────── */
 .page-indicator {
   position: fixed;
-  bottom: 80px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 10px 16px;
-  background: rgba(16, 16, 20, 0.85);
+  background: rgba(16, 16, 20, 0.9);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border);
   border-radius: 24px;
   z-index: 100;
-  animation: fadeInUp 0.3s var(--ease-out);
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
+/* Page dots wrapper (dots + label) */
+.page-dots-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
 
+/* Page dots container */
+.page-dots-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Page label below dots */
+.page-indicator-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+/* Page dots */
 .page-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--text-dim);
   border: none;
@@ -1403,22 +1417,104 @@
 
 .page-dot.active {
   width: 24px;
-  border-radius: 4px;
+  border-radius: 5px;
   background: var(--gold);
   box-shadow: 0 0 8px var(--gold-40);
 }
 
-.page-indicator-label {
-  font-size: 11px;
-  font-weight: 600;
+/* Chevron buttons (left/right navigation) */
+.indicator-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--text-secondary);
-  margin-left: 8px;
-  white-space: nowrap;
+  cursor: pointer !important;
+  transition: all var(--t);
 }
 
-/* Hide page indicator on desktop */
-@media (min-width: 1024px) {
-  .page-indicator {
-    display: none;
-  }
+/* Prevent SVG icons from collapsing in flex containers */
+.indicator-chevron svg {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  flex-shrink: 0;
+}
+
+/* Page dots need pointer cursor */
+.page-dot {
+  cursor: pointer !important;
+}
+
+.indicator-chevron:hover:not(:disabled) {
+  background: var(--gold-15);
+  color: var(--gold);
+  transform: scale(1.1);
+}
+
+.indicator-chevron:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* Disabled state for first/last page */
+.indicator-chevron:disabled,
+.indicator-chevron.disabled {
+  opacity: 0.3;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+/* Scroll-to-top button (separate, bottom right corner) */
+.scroll-to-top-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(16, 16, 20, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-secondary);
+  cursor: pointer;
+  z-index: 99;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+}
+
+/* Prevent SVG icon from collapsing */
+.scroll-to-top-btn svg {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  flex-shrink: 0;
+}
+
+.scroll-to-top-btn.visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.scroll-to-top-btn:hover {
+  background: var(--gold-15);
+  border-color: var(--gold-30);
+  color: var(--gold);
+  transform: translateY(-2px);
+}
+
+.scroll-to-top-btn:active {
+  transform: translateY(0) scale(0.95);
 }
