@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ethers } from 'ethers';
 import { useWallet } from './useWallet';
-import { CONTRACTS, ERC20_ABI, FORGE_ABI, GOLD_ABI, MOCK_DBXEN_ABI, getReadProvider } from '../contracts';
+import { CONTRACTS, ERC20_ABI, FORGE_ABI, GOLD_ABI, MOCK_DBXEN_ABI, XENBURNER_ABI, getReadProvider } from '../contracts';
 
 const pubProvider = getReadProvider();
 
@@ -143,6 +143,7 @@ export function useForgeData() {
     const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, pubProvider);
     const gold = new ethers.Contract(CONTRACTS.GOLDToken, GOLD_ABI, pubProvider);
     const dbxen = new ethers.Contract(CONTRACTS.MockDBXEN, MOCK_DBXEN_ABI, pubProvider);
+    const xenBurner = new ethers.Contract(CONTRACTS.XenBurner, XENBURNER_ABI, pubProvider);
 
     const [
       pendingBuyBurnEth,
@@ -179,9 +180,9 @@ export function useForgeData() {
       pubProvider.getBalance(CONTRACTS.DXNForge),
       forge.allocLts(),
       forge.totEthDist(),
-      forge.xenFees(),
+      xenBurner.xenFees(),
       gold.totalSupply(),
-      forge.xenBurned(),
+      xenBurner.xenBurned(),
     ]);
 
     // Calculate claimable ETH
