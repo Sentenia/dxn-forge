@@ -239,7 +239,7 @@ function HowItWorks({ onNavigate }) {
             <text x="630" y="280" fill="#f87171" fontSize="8" fontWeight="500" transform="rotate(90, 630, 280)">reinvest → burn XEN</text>
 
             {/* ============ LABELS ============ */}
-            <text x="325" y="580" textAnchor="middle" fill="var(--text-muted)" fontSize="10">Protocol fee sources: XEN burn fees, DXN stake/unstake, GOLD transactions</text>
+            <text x="325" y="580" textAnchor="middle" fill="var(--text-muted)" fontSize="10">Protocol fee sources: XEN burn fees + DBXen claimFees() revenue</text>
           </svg>
         </div>
 
@@ -328,8 +328,8 @@ function HowItWorks({ onNavigate }) {
               <ul className="feature-list">
                 <li><ArrowRight size={14} /> 88% of fees go to GOLD stakers</li>
                 <li><ArrowRight size={14} /> Proportional to your GOLD stake</li>
-                <li><ArrowRight size={14} /> Auto-staked GOLD earns immediately</li>
-                <li><ArrowRight size={14} /> Manually stake additional GOLD</li>
+                <li><ArrowRight size={14} /> Auto-staked GOLD earns immediately (no lock)</li>
+                <li><ArrowRight size={14} /> Manually staked GOLD follows 1-cycle lock</li>
               </ul>
             </div>
           </div>
@@ -342,13 +342,13 @@ function HowItWorks({ onNavigate }) {
             </div>
             <div className="card-content">
               <p>
-                Lock DXN or GOLD in Crucibles for 1-10 years to earn from the 3.12% LTS pool.
-                Longer locks earn higher APY multipliers. Claim ETH when your position matures.
+                Lock DXN or GOLD in Crucibles across 5 tiers to earn from the 3.12% LTS pool.
+                Higher tiers lock longer but earn greater weight in the ETH distribution. Claim ETH when your position matures.
               </p>
               <ul className="feature-list">
                 <li><ArrowRight size={14} /> 3.12% of fees to LTS pool</li>
-                <li><ArrowRight size={14} /> 1-10 year lock periods</li>
-                <li><ArrowRight size={14} /> Higher years = higher multiplier</li>
+                <li><ArrowRight size={14} /> 5 tiers: 1000 / 2000 / 3000 / 4000 / 5000 days</li>
+                <li><ArrowRight size={14} /> Higher tiers = higher weight (1x–5x)</li>
                 <li><ArrowRight size={14} /> Claim full ETH at maturity</li>
               </ul>
             </div>
