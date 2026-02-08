@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Coins, Lock, LockKeyhole, Flame, Zap, Trophy, CheckCircle, XCircle } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Coins, Lock, LockKeyhole, Flame, Zap, Trophy, CheckCircle, XCircle, Clock } from 'lucide-react';
 import { ethers } from 'ethers';
 import { useWallet } from '../hooks/useWallet';
 import { useForgeData } from '../hooks/useForgeData';
 import { CONTRACTS, FORGE_ABI, MOCK_DBXEN_ABI } from '../contracts';
+import { parseContractError, logContractError } from '../utils/contractErrors';
 
 function BigCards() {
   const { address, connected } = useWallet();
@@ -29,14 +31,25 @@ function BigCards() {
 
   // Calculate cooldown
   useEffect(() => {
-    if (!protocol.lastClaimFeesTime) return;
-    
-    const interval = setInterval(() => {
+    // Skip if no previous claim recorded
+    if (!protocol.lastClaimFeesTime) {
+      setCooldownRemaining(0);
+      return;
+    }
+
+    // Calculate immediately on mount/update
+    const calcRemaining = () => {
       const now = Date.now() / 1000;
-      const lastClaim = protocol.lastClaimFeesTime || 0;
+      const lastClaim = protocol.lastClaimFeesTime;
       const remaining = Math.max(0, (lastClaim + 86400) - now);
       setCooldownRemaining(remaining);
-    }, 1000);
+    };
+
+    // Calculate immediately
+    calcRemaining();
+
+    // Then update every second
+    const interval = setInterval(calcRemaining, 1000);
 
     return () => clearInterval(interval);
   }, [protocol.lastClaimFeesTime]);
@@ -83,19 +96,10 @@ function BigCards() {
       const tx = await forge.claimFees();
       await tx.wait();
       showToast('success', 'ETH claimed to Forge vault');
-      refetch();
+      refetch(true);
     } catch (err) {
-      console.error('Claim error:', err);
-      const errorData = err.data || '';
-      if (errorData.includes('3dc61b4a')) {
-        setClaimError('Must wait for next DBXen cycle');
-      } else if (errorData.includes('Cooldown') || err.message?.includes('Cooldown')) {
-        setClaimError('24h cooldown not passed');
-      } else if (errorData.includes('NoEth') || err.message?.includes('NoEth')) {
-        setClaimError('Not enough ETH to claim');
-      } else {
-        setClaimError('Claim failed - try again later');
-      }
+      logContractError('Claim fees', err);
+      setClaimError(parseContractError(err));
     } finally {
       setClaimLoading(false);
     }
@@ -116,10 +120,10 @@ function BigCards() {
       const tx = await forge.buyAndBurn(amountToBurn, 0);
       await tx.wait();
       showToast('success', 'Buy & Burn executed - epoch ended');
-      refetch();
+      refetch(true);
     } catch (err) {
-      console.error('Buy & Burn error:', err);
-      showToast('error', `Buy & Burn failed: ${err.reason || err.message}`);
+      logContractError('Buy & Burn', err);
+      showToast('error', parseContractError(err));
     } finally {
       setBurnLoading(false);
     }
@@ -145,7 +149,7 @@ function BigCards() {
         {/* Cooldown Timer - belongs here for claimFees */}
         {cooldownRemaining > 0 && (
           <div className="cooldown-timer">
-            ⏰ Cooldown: {formatCooldown(cooldownRemaining)}
+            <Clock size={14} className="inline-icon" /> Cooldown: {formatCooldown(cooldownRemaining)}
           </div>
         )}
         
@@ -306,11 +310,12 @@ function BigCards() {
       </div>
 
       {/* Toast Notification */}
-      {toast.show && (
+      {toast.show && createPortal(
         <div className={`toast-notification ${toast.type}`}>
           {toast.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
           <span>{toast.message}</span>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

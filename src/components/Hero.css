@@ -8,30 +8,12 @@
   padding: 60px 20px 32px;
 }
 
-/* Hero Title Container — 3-column layout with flanking stats */
+/* Hero Title Container */
 .hero-title-container {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 40px;
   max-width: 1200px;
-  margin: 0 auto 40px;
+  margin: 0 auto 20px;
 }
 
-/* Hero Stats Groups (left and right) */
-.hero-stats-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.hero-stats-left {
-  justify-self: end;
-}
-
-.hero-stats-right {
-  justify-self: start;
-}
 
 /* Glass Card Style for Stats */
 .hero-stat-card {
@@ -160,6 +142,71 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.08em;
+}
+
+/* Stats Toggle Button */
+.stats-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 8px 16px;
+  background: rgba(16, 16, 20, 0.6);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid var(--gold-10);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: all var(--t);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.stats-toggle:hover {
+  background: rgba(20, 20, 26, 0.8);
+  border-color: var(--gold-20);
+  color: var(--gold);
+}
+
+.stats-toggle svg {
+  transition: transform 0.25s ease;
+}
+
+/* Hero Stats Wrapper (collapsible) */
+.hero-stats-wrapper {
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.25s ease;
+}
+
+.hero-stats-wrapper.expanded {
+  max-height: 250px;
+  opacity: 1;
+}
+
+.hero-stats-wrapper.collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.hero-stats-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  max-width: 500px;
+  margin: 16px auto 0;
+  padding: 0 16px 8px;
+}
+
+/* Left column cards align left */
+.hero-stat-card.stat-left {
+  justify-self: start;
+}
+
+/* Right column cards align right */
+.hero-stat-card.stat-right {
+  justify-self: end;
 }
 
 /* ── Promo Cards Grid ───────────────────────── */
@@ -466,6 +513,29 @@
   color: #f87171;
 }
 
+.accordion-badge.docs {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+}
+
+/* Inline icons for list items and notes */
+.inline-icon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 6px;
+  opacity: 0.7;
+}
+
+.inline-icon.check {
+  color: #22c55e;
+  opacity: 1;
+}
+
+.inline-icon.bulb {
+  color: #f59e0b;
+  opacity: 1;
+}
+
 .accordion-content {
   padding: 0 20px 20px;
   animation: accordionOpen 0.25s var(--ease-out);
@@ -569,36 +639,6 @@
   }
 }
 
-@media (max-width: 1024px) {
-  .hero-title-container {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-
-  .hero-stats-group {
-    flex-direction: row;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .hero-stats-left,
-  .hero-stats-right {
-    justify-self: center;
-  }
-
-  .hero-stats-left {
-    order: 2;
-  }
-
-  .hero-title {
-    order: 1;
-  }
-
-  .hero-stats-right {
-    order: 3;
-  }
-}
-
 @media (max-width: 768px) {
   .hero-section {
     padding: 40px 16px 24px;
@@ -618,46 +658,17 @@
   }
 
   /* Mobile 2-column grid layout for stats */
-  .hero-title-container {
-    display: grid;
+  .hero-stats-container {
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
     gap: 8px;
-  }
-
-  /* Title spans full width on first row */
-  .hero-title {
-    grid-column: 1 / -1;
-    order: 0;
-    margin-bottom: 16px;
-  }
-
-  /* Left column: Protocol stats */
-  .hero-stats-left {
-    grid-column: 1;
-    grid-row: 2;
-    order: 1;
-    justify-self: stretch;
-    flex-direction: column;
-  }
-
-  /* Right column: Personal stats */
-  .hero-stats-right {
-    grid-column: 2;
-    grid-row: 2;
-    order: 2;
-    justify-self: stretch;
-    flex-direction: column;
-  }
-
-  .hero-stats-group {
-    gap: 6px;
+    padding: 0 16px;
+    max-width: 100%;
   }
 
   /* Compact card styling */
   .hero-stat-card {
     min-width: unset;
-    width: 100%;
+    width: auto;
     padding: 8px 10px;
     gap: 8px;
   }
@@ -677,6 +688,10 @@
 }
 
 @media (max-width: 480px) {
+  .hero-stats-container {
+    gap: 6px;
+  }
+
   .hero-stat-card {
     padding: 6px 8px;
     gap: 6px;
@@ -693,9 +708,5 @@
 
   .hero-stat-label {
     font-size: 7px;
-  }
-
-  .hero-stat-value {
-    font-size: 13px;
   }
 }

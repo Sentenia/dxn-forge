@@ -94,7 +94,8 @@ function HowItWorks({ onNavigate }) {
             {/* The Forge */}
             <g className="node" filter="url(#glow)">
               <circle cx="325" cy="150" r="42" fill="rgba(255, 157, 0, 0.2)" stroke="url(#goldGradient)" strokeWidth="3" />
-              <text x="325" y="145" textAnchor="middle" fill="#ff9d00" fontSize="28">🔥</text>
+              {/* Flame icon */}
+              <path d="M325 125 c-8 12-14 20-14 28 c0 10 6 16 14 16 c8 0 14-6 14-16 c0-8-6-16-14-28 z m0 36 c-4 0-6-3-6-8 c0-4 3-8 6-14 c3 6 6 10 6 14 c0 5-2 8-6 8z" fill="#ff9d00" />
               <text x="325" y="170" textAnchor="middle" fill="#ffb700" fontSize="10" fontWeight="700">THE FORGE</text>
             </g>
 
@@ -111,7 +112,9 @@ function HowItWorks({ onNavigate }) {
             {/* Tickets */}
             <g className="node">
               <rect x="270" y="230" width="110" height="50" rx="10" fill="rgba(255, 157, 0, 0.15)" stroke="#ff9d00" strokeWidth="2" />
-              <text x="325" y="252" textAnchor="middle" fill="#ff9d00" fontSize="18">🎫</text>
+              {/* Ticket icon */}
+              <rect x="312" y="240" width="26" height="16" rx="2" fill="none" stroke="#ff9d00" strokeWidth="1.5" />
+              <line x1="320" y1="240" x2="320" y2="256" stroke="#ff9d00" strokeWidth="1" strokeDasharray="2,2" />
               <text x="325" y="270" textAnchor="middle" fill="#ffb700" fontSize="10" fontWeight="600">TICKETS</text>
             </g>
 
@@ -156,7 +159,19 @@ function HowItWorks({ onNavigate }) {
             <g className="node">
               <rect x="255" y="405" width="140" height="55" rx="12" fill="rgba(255, 215, 0, 0.1)" stroke="#ffd700" strokeWidth="2" />
               <text x="325" y="428" textAnchor="middle" fill="#ffd700" fontSize="11" fontWeight="600">GOLD STAKERS</text>
-              <text x="325" y="448" textAnchor="middle" fill="#ffd700" fontSize="16">👤 👤 👤</text>
+              {/* User icons */}
+              <g transform="translate(295, 438)">
+                <circle cx="8" cy="4" r="4" fill="#ffd700" />
+                <path d="M0 16 Q0 10 8 10 Q16 10 16 16" fill="#ffd700" />
+              </g>
+              <g transform="translate(315, 438)">
+                <circle cx="8" cy="4" r="4" fill="#ffd700" />
+                <path d="M0 16 Q0 10 8 10 Q16 10 16 16" fill="#ffd700" />
+              </g>
+              <g transform="translate(335, 438)">
+                <circle cx="8" cy="4" r="4" fill="#ffd700" />
+                <path d="M0 16 Q0 10 8 10 Q16 10 16 16" fill="#ffd700" />
+              </g>
             </g>
 
             {/* Arrow: GOLD → GOLD Stakers */}
@@ -170,7 +185,10 @@ function HowItWorks({ onNavigate }) {
             {/* ETH Rewards (88%) */}
             <g className="node">
               <rect x="255" y="495" width="140" height="45" rx="10" fill="rgba(96, 165, 250, 0.15)" stroke="#60a5fa" strokeWidth="2" />
-              <text x="325" y="515" textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="600">💰 ETH REWARDS</text>
+              {/* Coins icon */}
+              <circle cx="285" cy="512" r="6" fill="none" stroke="#60a5fa" strokeWidth="1.5" />
+              <text x="285" y="515" textAnchor="middle" fill="#60a5fa" fontSize="7" fontWeight="700">Ξ</text>
+              <text x="330" y="515" textAnchor="middle" fill="#60a5fa" fontSize="10" fontWeight="600">ETH REWARDS</text>
               <text x="325" y="530" textAnchor="middle" fill="#3b82f6" fontSize="9" fontWeight="700">88% of fees</text>
             </g>
 
@@ -183,14 +201,18 @@ function HowItWorks({ onNavigate }) {
             {/* Buy & Burn bucket (8.88%) */}
             <g className="node">
               <rect x="80" y="495" width="100" height="45" rx="8" fill="rgba(255, 157, 0, 0.1)" stroke="#ff9d00" strokeWidth="1.5" />
-              <text x="130" y="515" textAnchor="middle" fill="#ff9d00" fontSize="9" fontWeight="600">🔥 BUY & BURN</text>
+              {/* Flame icon */}
+              <path d="M95 507 c-3 5-5 8-5 11 c0 4 2.5 6 5 6 c2.5 0 5-2 5-6 c0-3-2-6-5-11z" fill="#ff9d00" />
+              <text x="140" y="515" textAnchor="middle" fill="#ff9d00" fontSize="9" fontWeight="600">BUY & BURN</text>
               <text x="130" y="530" textAnchor="middle" fill="#ff9d00" fontSize="8">8.88%</text>
             </g>
 
             {/* LTS Crucible (3.12%) */}
             <g className="node">
               <rect x="470" y="495" width="100" height="45" rx="8" fill="rgba(168, 85, 247, 0.1)" stroke="#a855f7" strokeWidth="1.5" />
-              <text x="520" y="515" textAnchor="middle" fill="#c084fc" fontSize="9" fontWeight="600">💎 LTS CRUCIBLE</text>
+              {/* Gem/Diamond icon */}
+              <path d="M485 508 l5 -5 l5 5 l-5 10 z" fill="none" stroke="#c084fc" strokeWidth="1.5" />
+              <text x="530" y="515" textAnchor="middle" fill="#c084fc" fontSize="9" fontWeight="600">LTS CRUCIBLE</text>
               <text x="520" y="530" textAnchor="middle" fill="#a855f7" fontSize="8">3.12%</text>
             </g>
 

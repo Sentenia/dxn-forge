@@ -4,14 +4,16 @@ import { useWallet } from './useWallet';
 import { CONTRACTS, ERC20_ABI, FORGE_ABI, GOLD_ABI, MOCK_DBXEN_ABI, getReadProvider } from '../contracts';
 
 const pubProvider = getReadProvider();
-const userRpc = pubProvider;
 
 export function useForgeData() {
   const { address, connected } = useWallet();
-  
+
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [error, setError] = useState(null);
   const initialLoadDone = useRef(false);
+  const phase2Done = useRef(false);
+
   const [protocol, setProtocol] = useState({
     currentEpoch: 0,
     currentCycle: 0,
@@ -37,6 +39,7 @@ export function useForgeData() {
     xenFees: '0',
     totalXenBurned: '0',
   });
+
   const [user, setUser] = useState({
     dxnBalance: '0',
     goldBalance: '0',
@@ -57,8 +60,204 @@ export function useForgeData() {
 
   const fetching = useRef(false);
 
-  const refetch = useCallback(async () => {
-    if (fetching.current) return;
+  // PHASE 1: Essential data for immediate UI (user balances, epoch/cycle)
+  const fetchEssentials = useCallback(async () => {
+    const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, pubProvider);
+
+    // Get minimal protocol data needed for actions
+    const [currentEpoch, currentCycle, epochMultiplier, canClaimFees, lastFeeTime] = await Promise.all([
+      forge.epoch(),
+      forge.cycle(),
+      forge.mult(),
+      forge.canFee(),
+      forge.lastFeeTime(),
+    ]);
+
+    // Update protocol with essentials first
+    setProtocol(prev => ({
+      ...prev,
+      currentEpoch: Number(currentEpoch),
+      currentCycle: Number(currentCycle),
+      epochMultiplier: Number(epochMultiplier),
+      canClaimFees,
+      lastClaimFeesTime: Number(lastFeeTime),
+    }));
+
+    // Fetch user data if connected
+    if (connected && address) {
+      const uForge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, pubProvider);
+      const uDxn = new ethers.Contract(CONTRACTS.tDXN, ERC20_ABI, pubProvider);
+      const uGold = new ethers.Contract(CONTRACTS.GOLDToken, ERC20_ABI, pubProvider);
+      const uXen = new ethers.Contract(CONTRACTS.tXEN, ERC20_ABI, pubProvider);
+
+      const [
+        dxnBal,
+        goldBal,
+        xenBal,
+        userDXN,
+        autoGold,
+        manualGold,
+        pendingEth,
+        pendingTickets,
+        userTickets,
+        dxnAllowance,
+        goldAllowance,
+      ] = await Promise.all([
+        uDxn.balanceOf(address),
+        uGold.balanceOf(address),
+        uXen.balanceOf(address),
+        uForge.userDXN(address),
+        uForge.autoGold(address),
+        uForge.manualGold(address),
+        uForge.pendEth(address),
+        uForge.pendTix(address),
+        uForge.userTix(address),
+        uDxn.allowance(address, CONTRACTS.DXNForge),
+        uGold.allowance(address, CONTRACTS.DXNForge),
+      ]);
+
+      setUser({
+        dxnBalance: ethers.formatEther(dxnBal),
+        goldBalance: ethers.formatEther(goldBal),
+        xenBalance: ethers.formatEther(xenBal),
+        dxnPending: ethers.formatEther(userDXN[0]),
+        dxnStaked: ethers.formatEther(userDXN[1]),
+        dxnUnlockCycle: Number(userDXN[2]),
+        autoStakedGold: ethers.formatEther(autoGold),
+        manualGoldPending: ethers.formatEther(manualGold[0]),
+        manualGoldStaked: ethers.formatEther(manualGold[1]),
+        pendingEth: ethers.formatEther(pendingEth),
+        pendingTickets: ethers.formatEther(pendingTickets),
+        totalTickets: ethers.formatEther(userTickets),
+        pendingGoldReward: '0', // Calculated in phase 2
+        dxnAllowance: ethers.formatEther(dxnAllowance),
+        goldAllowance: ethers.formatEther(goldAllowance),
+      });
+    }
+
+    return { currentEpoch: Number(currentEpoch) };
+  }, [address, connected]);
+
+  // PHASE 2: Protocol stats (delayed, non-essential for actions)
+  const fetchProtocolStats = useCallback(async (currentEpochNum) => {
+    const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, pubProvider);
+    const gold = new ethers.Contract(CONTRACTS.GOLDToken, GOLD_ABI, pubProvider);
+    const dbxen = new ethers.Contract(CONTRACTS.MockDBXEN, MOCK_DBXEN_ABI, pubProvider);
+
+    const [
+      pendingBuyBurnEth,
+      totalDXNPending,
+      totalDXNStaked,
+      totalAutoStakedGold,
+      totalManualGoldStaked,
+      ticketsThisEpoch,
+      stakerTixEpoch,
+      lastFeeTime,
+      dbxenBalance,
+      pendingLts,
+      globalLtsDXN,
+      globalLtsGold,
+      forgeBalance,
+      allocLts,
+      totEthDist,
+      xenFees,
+      goldTotalSupply,
+      totalXenBurned,
+    ] = await Promise.all([
+      forge.pendingBurn(),
+      forge.dxnPending(),
+      forge.dxnStaked(),
+      forge.totAutoGold(),
+      forge.manualStaked(),
+      forge.tixEpoch(),
+      forge.stakerTixEpoch(),
+      forge.lastFeeTime(),
+      pubProvider.getBalance(CONTRACTS.MockDBXEN),
+      forge.pendingLts(),
+      forge.globalLtsDXN(),
+      forge.globalLtsGold(),
+      pubProvider.getBalance(CONTRACTS.DXNForge),
+      forge.allocLts(),
+      forge.totEthDist(),
+      forge.xenFees(),
+      gold.totalSupply(),
+      forge.xenBurned(),
+    ]);
+
+    // Calculate claimable ETH
+    const undistributed = forgeBalance - pendingBuyBurnEth - pendingLts - allocLts;
+    const claimableTotal = dbxenBalance + (undistributed > 0n ? undistributed : 0n);
+
+    // Calculate total GOLD minted (limit to last 10 epochs to avoid slowdown)
+    let totalGoldMinted = BigInt(0);
+    const startEpoch = Math.max(1, currentEpochNum - 10);
+    for (let i = startEpoch; i < currentEpochNum; i++) {
+      try {
+        const done = await forge.epDone(i);
+        if (done) {
+          const epGoldAmt = await forge.epGold(i);
+          totalGoldMinted += epGoldAmt;
+        }
+      } catch (e) {
+        // Skip if epoch doesn't exist
+      }
+    }
+
+    setProtocol(prev => ({
+      ...prev,
+      pendingBuyBurnEth: ethers.formatEther(pendingBuyBurnEth),
+      totalDXNPending: ethers.formatEther(totalDXNPending),
+      totalDXNStaked: ethers.formatEther(totalDXNStaked),
+      totalAutoStakedGold: ethers.formatEther(totalAutoStakedGold),
+      totalManualGoldStaked: ethers.formatEther(totalManualGoldStaked),
+      ticketsThisEpoch: Number(ethers.formatEther(ticketsThisEpoch)),
+      stakerTickets: Number(ethers.formatEther(stakerTixEpoch)),
+      burnerTickets: Number(ethers.formatEther(ticketsThisEpoch - stakerTixEpoch)),
+      lastClaimFeesTime: Number(lastFeeTime),
+      claimableEth: ethers.formatEther(claimableTotal),
+      goldSupply: ethers.formatEther(totalGoldMinted),
+      goldTotalSupply: ethers.formatEther(goldTotalSupply),
+      globalLtsDXN: ethers.formatEther(globalLtsDXN),
+      globalLtsGold: ethers.formatEther(globalLtsGold),
+      pendingLts: ethers.formatEther(pendingLts),
+      forgeBalance: ethers.formatEther(forgeBalance),
+      goldStakersPool: ethers.formatEther(totEthDist),
+      xenFees: ethers.formatEther(xenFees),
+      totalXenBurned: ethers.formatEther(totalXenBurned),
+    }));
+
+    // Calculate pending GOLD reward if user has tickets
+    if (connected && address) {
+      const uForge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, pubProvider);
+      const userTickets = await uForge.userTix(address);
+
+      if (currentEpochNum > 1 && userTickets > 0) {
+        try {
+          const prevEpoch = currentEpochNum - 1;
+          const [epTixPrev, epGoldPrev, epDonePrev] = await Promise.all([
+            uForge.epTix(prevEpoch),
+            uForge.epGold(prevEpoch),
+            uForge.epDone(prevEpoch),
+          ]);
+          if (epDonePrev && epTixPrev > 0) {
+            const pendingGoldReward = (userTickets * epGoldPrev) / epTixPrev;
+            setUser(prev => ({
+              ...prev,
+              pendingGoldReward: ethers.formatEther(pendingGoldReward),
+            }));
+          }
+        } catch (err) {
+          console.error('Error fetching epoch data:', err);
+        }
+      }
+    }
+  }, [address, connected]);
+
+  // Main refetch function with two phases
+  // force=true skips the fetching guard and delay (use after transactions)
+  const refetch = useCallback(async (force = false) => {
+    // Skip if already fetching, unless forced
+    if (fetching.current && !force) return;
     fetching.current = true;
 
     if (!initialLoadDone.current) {
@@ -67,210 +266,44 @@ export function useForgeData() {
     setError(null);
 
     try {
-      // Protocol contracts on Alchemy
-      const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, pubProvider);
-      const gold = new ethers.Contract(CONTRACTS.GOLDToken, GOLD_ABI, pubProvider);
-      const dxn = new ethers.Contract(CONTRACTS.tDXN, ERC20_ABI, pubProvider);
-      const dbxen = new ethers.Contract(CONTRACTS.MockDBXEN, MOCK_DBXEN_ABI, pubProvider);
+      // PHASE 1: Immediate essentials
+      const { currentEpoch } = await fetchEssentials();
 
-      // Batch 1: core protocol data
-      const [
-        currentEpoch,
-        currentCycle,
-        epochMultiplier,
-        pendingBuyBurnEth,
-        totalDXNPending,
-        totalDXNStaked,
-        totalAutoStakedGold,
-        totalManualGoldStaked,
-        ticketsThisEpoch,
-        stakerTixEpoch,
-      ] = await Promise.all([
-        forge.epoch(),
-        forge.cycle(),
-        forge.mult(),
-        forge.pendingBurn(),
-        forge.dxnPending(),
-        forge.dxnStaked(),
-        forge.totAutoGold(),
-        forge.manualStaked(),
-        forge.tixEpoch(),
-        forge.stakerTixEpoch(),
-      ]);
+      setLoading(false);
+      initialLoadDone.current = true;
 
-      // Small gap between batches
-      await new Promise(r => setTimeout(r, 300));
-
-      // Batch 2: balances and remaining protocol data
-      const [
-        canClaimFees,
-        lastFeeTime,
-        dbxenBalance,
-        pendingLts,
-        globalLtsDXN,
-        globalLtsGold,
-        forgeBalance,
-        allocLts,
-        totEthDist,
-        xenFees,
-        goldTotalSupply,
-        totalXenBurned,
-      ] = await Promise.all([
-        forge.canFee(),
-        forge.lastFeeTime(),
-        pubProvider.getBalance(CONTRACTS.MockDBXEN),
-        forge.pendingLts(),
-        forge.globalLtsDXN(),
-        forge.globalLtsGold(),
-        pubProvider.getBalance(CONTRACTS.DXNForge),
-        forge.allocLts(),
-        forge.totEthDist(),
-        forge.xenFees(),
-        gold.totalSupply(),
-        forge.xenBurned(),
-      ]);
-
-      // Undistributed ETH sitting in Forge (xen burn fees etc.)
-      const undistributed = forgeBalance - pendingBuyBurnEth - pendingLts - allocLts;
-
-      // Claimable = DBXen fees + undistributed Forge ETH
-      const claimableTotal = dbxenBalance + (undistributed > 0n ? undistributed : 0n);
-
-      // Calculate total GOLD minted from completed epochs
-      let totalGoldMinted = BigInt(0);
-      const currentEp = Number(currentEpoch);
-      for (let i = 1; i < currentEp; i++) {
-        try {
-          const done = await forge.epDone(i);
-          if (done) {
-            const epGoldAmt = await forge.epGold(i);
-            totalGoldMinted += epGoldAmt;
-          }
-        } catch (e) {
-          // Skip if epoch doesn't exist
-        }
+      // PHASE 2: Protocol stats
+      // Only delay on initial load, not on forced refetch (after tx)
+      if (!phase2Done.current && !force) {
+        setStatsLoading(true);
+        await new Promise(r => setTimeout(r, 1000));
       }
 
-      console.log('TICKETS DEBUG:', ticketsThisEpoch.toString(), stakerTixEpoch.toString(), ethers.formatEther(ticketsThisEpoch), Number(ethers.formatEther(ticketsThisEpoch)));
+      await fetchProtocolStats(currentEpoch);
 
-      setProtocol({
-        currentEpoch: Number(currentEpoch),
-        currentCycle: Number(currentCycle),
-        epochMultiplier: Number(epochMultiplier),
-        pendingBuyBurnEth: ethers.formatEther(pendingBuyBurnEth),
-        totalDXNPending: ethers.formatEther(totalDXNPending),
-        totalDXNStaked: ethers.formatEther(totalDXNStaked),
-        totalAutoStakedGold: ethers.formatEther(totalAutoStakedGold),
-        totalManualGoldStaked: ethers.formatEther(totalManualGoldStaked),
-        ticketsThisEpoch: Number(ethers.formatEther(ticketsThisEpoch)),
-        stakerTickets: Number(ethers.formatEther(stakerTixEpoch)),
-        burnerTickets: Number(ethers.formatEther(ticketsThisEpoch - stakerTixEpoch)),
-        canClaimFees,
-        lastClaimFeesTime: Number(lastFeeTime),
-        claimableEth: ethers.formatEther(claimableTotal),
-        goldSupply: ethers.formatEther(totalGoldMinted),
-        goldTotalSupply: ethers.formatEther(goldTotalSupply),
-        globalLtsDXN: ethers.formatEther(globalLtsDXN),
-        globalLtsGold: ethers.formatEther(globalLtsGold),
-        pendingLts: ethers.formatEther(pendingLts),
-        forgeBalance: ethers.formatEther(forgeBalance),
-        goldStakersPool: ethers.formatEther(totEthDist),
-        xenFees: ethers.formatEther(xenFees),
-        totalXenBurned: ethers.formatEther(totalXenBurned),
-      });
+      setStatsLoading(false);
+      phase2Done.current = true;
 
-      // Fetch user data if connected — uses separate RPC to avoid throttling
-      if (connected && address) {
-        const uForge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, userRpc);
-        const uGold = new ethers.Contract(CONTRACTS.GOLDToken, GOLD_ABI, userRpc);
-        const uDxn = new ethers.Contract(CONTRACTS.tDXN, ERC20_ABI, userRpc);
-        const uXen = new ethers.Contract(CONTRACTS.tXEN, ERC20_ABI, userRpc);
-
-        try {
-          const [
-            dxnBal,
-            goldBal,
-            xenBal,
-            userDXN,
-            autoGold,
-            manualGold,
-            pendingEth,
-            pendingTickets,
-            userTickets,
-            dxnAllowance,
-            goldAllowance,
-          ] = await Promise.all([
-            uDxn.balanceOf(address),
-            uGold.balanceOf(address),
-            uXen.balanceOf(address),
-            uForge.userDXN(address),
-            uForge.autoGold(address),
-            uForge.manualGold(address),
-            uForge.pendEth(address),
-            uForge.pendTix(address),
-            uForge.userTix(address),
-            uDxn.allowance(address, CONTRACTS.DXNForge),
-            uGold.allowance(address, CONTRACTS.DXNForge),
-          ]);
-
-          // Calculate pending GOLD reward from previous epoch
-          let pendingGoldReward = BigInt(0);
-          const epochNum = Number(currentEpoch);
-          if (epochNum > 1 && userTickets > 0) {
-            try {
-              const prevEpoch = epochNum - 1;
-              const [epTixPrev, epGoldPrev, epDonePrev] = await Promise.all([
-                uForge.epTix(prevEpoch),
-                uForge.epGold(prevEpoch),
-                uForge.epDone(prevEpoch),
-              ]);
-              if (epDonePrev && epTixPrev > 0) {
-                pendingGoldReward = (userTickets * epGoldPrev) / epTixPrev;
-              }
-            } catch (err) {
-              console.error('Error fetching epoch data:', err);
-            }
-          }
-
-          setUser({
-            dxnBalance: ethers.formatEther(dxnBal),
-            goldBalance: ethers.formatEther(goldBal),
-            xenBalance: ethers.formatEther(xenBal),
-            dxnPending: ethers.formatEther(userDXN[0]),
-            dxnStaked: ethers.formatEther(userDXN[1]),
-            dxnUnlockCycle: Number(userDXN[2]),
-            autoStakedGold: ethers.formatEther(autoGold),
-            manualGoldPending: ethers.formatEther(manualGold[0]),
-            manualGoldStaked: ethers.formatEther(manualGold[1]),
-            pendingEth: ethers.formatEther(pendingEth),
-            pendingTickets: ethers.formatEther(pendingTickets),
-            totalTickets: ethers.formatEther(userTickets),
-            pendingGoldReward: ethers.formatEther(pendingGoldReward),
-            dxnAllowance: ethers.formatEther(dxnAllowance),
-            goldAllowance: ethers.formatEther(goldAllowance),
-          });
-        } catch (userErr) {
-          console.warn('User data fetch failed, will retry:', userErr.message);
-        }
-      }
     } catch (err) {
       console.error('Fetch error:', err);
       setError(err.message);
+      setLoading(false);
+      setStatsLoading(false);
     }
 
-    setLoading(false);
-    initialLoadDone.current = true;
     fetching.current = false;
-  }, [address, connected]);
+  }, [fetchEssentials, fetchProtocolStats]);
 
+  // Initial fetch
   useEffect(() => {
     refetch();
   }, [refetch]);
 
+  // Auto-refresh every 30 seconds
   useEffect(() => {
-    const interval = setInterval(refetch, 60000);
+    const interval = setInterval(refetch, 30000);
     return () => clearInterval(interval);
   }, [refetch]);
 
-  return { loading, error, protocol, user, refetch };
+  return { loading, statsLoading, error, protocol, user, refetch };
 }

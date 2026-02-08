@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, Lock, Unlock, Info, Trophy, Gift, Coins, Ticket, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { TrendingUp, Lock, Unlock, Info, Trophy, Gift, Coins, Ticket, RefreshCw, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { ethers } from 'ethers';
 import { useWallet } from '../hooks/useWallet';
 import { useForgeData } from '../hooks/useForgeData';
 import { CONTRACTS, FORGE_ABI, ERC20_ABI } from '../contracts';
+import { parseContractError, logContractError, extractErrorSelector } from '../utils/contractErrors';
+import InfoModal from './InfoModal';
 
 
 function UserActions() {
@@ -27,6 +30,9 @@ function UserActions() {
   // Toast state
   const [toast, setToast] = useState({ show: false, type: '', message: '' });
 
+  // Info modal state (for friendly error explanations)
+  const [infoModal, setInfoModal] = useState({ show: false, title: '', message: '', details: [] });
+
   // Auto-hide toast
   useEffect(() => {
     if (toast.show) {
@@ -35,7 +41,10 @@ function UserActions() {
     }
   }, [toast.show]);
 
-  const showToast = (type, message) => setToast({ show: true, type, message });
+  const showToast = (type, message) => {
+    console.log('[showToast] Setting toast:', { type, message });
+    setToast({ show: true, type, message });
+  };
 
   // Parse user data
   const userDxnBalance = parseFloat(user.dxnBalance) || 0;
@@ -46,6 +55,8 @@ function UserActions() {
   const userGoldPending = parseFloat(user.manualGoldPending) || 0;
   const userGoldAutoStaked = parseFloat(user.autoStakedGold) || 0;
   const autoStakedGold = parseFloat(user.autoStakedGold) || 0;
+  // Total unstakeable GOLD = manual staked + auto staked (excludes pending)
+  const totalUnstakeableGold = userGoldStaked + userGoldAutoStaked;
   const pendingGoldReward = parseFloat(user.pendingGoldReward) || 0;
   const claimableETH = parseFloat(user.pendingEth) || 0;
   const userTicketsFromStaking = parseFloat(user.pendingTickets) || 0;
@@ -103,10 +114,10 @@ function UserActions() {
       }
 
       setDxnAmount('');
-      refetch();
+      refetch(true);
     } catch (err) {
-      console.error('DXN action error:', err);
-      showToast('error', `Failed: ${err.reason || err.message}`);
+      logContractError('DXN action', err);
+      showToast('error', parseContractError(err));
     } finally {
       setDxnLoading(false);
     }
@@ -117,7 +128,8 @@ function UserActions() {
     if (goldTab === 'stake') {
       setGoldAmount(userGoldBalance.toString());
     } else {
-      setGoldAmount(userGoldStaked.toString());
+      // MAX unstake = manual staked + auto staked (not pending)
+      setGoldAmount(totalUnstakeableGold.toString());
     }
   };
 
@@ -153,10 +165,10 @@ function UserActions() {
       }
 
       setGoldAmount('');
-      refetch();
+      refetch(true);
     } catch (err) {
-      console.error('GOLD action error:', err);
-      showToast('error', `Failed: ${err.reason || err.message}`);
+      logContractError('GOLD action', err);
+      showToast('error', parseContractError(err));
     } finally {
       setGoldLoading(false);
     }
@@ -169,13 +181,27 @@ function UserActions() {
     try {
       const signer = await getSigner();
       const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
+
+      // Pre-flight check: verify there's something to claim before sending tx
+      const [gold, eth] = await Promise.all([
+        forge.autoGold(address),
+        forge.pendEth(address),
+      ]);
+
+      if (gold === 0n && eth === 0n) {
+        showToast('warning', 'No rewards available yet — stake DXN/GOLD and wait for Buy & Burn');
+        setClaimLoading(false);
+        return;
+      }
+
       const tx = await forge.claimRewards();
       await tx.wait();
       showToast('success', 'Rewards claimed successfully');
-      refetch();
+      refetch(true);
     } catch (err) {
-      console.error('Claim error:', err);
-      showToast('error', `Claim failed: ${err.reason || err.message}`);
+      logContractError('Claim rewards', err);
+      const errorMessage = parseContractError(err);
+      showToast('error', errorMessage);
     } finally {
       setClaimLoading(false);
     }
@@ -191,10 +217,10 @@ function UserActions() {
       const tx = await forge.claimEth();
       await tx.wait();
       showToast('success', 'ETH claimed successfully');
-      refetch();
+      refetch(true);
     } catch (err) {
-      console.error('Claim ETH error:', err);
-      showToast('error', `Claim failed: ${err.reason || err.message}`);
+      logContractError('Claim ETH', err);
+      showToast('error', parseContractError(err));
     } finally {
       setClaimLoading(false);
     }
@@ -210,10 +236,10 @@ function UserActions() {
       const tx = await forge.sync();
       await tx.wait();
       showToast('success', 'Synced successfully');
-      refetch();
+      refetch(true);
     } catch (err) {
-      console.error('Poke error:', err);
-      showToast('error', `Sync failed: ${err.reason || err.message}`);
+      logContractError('Sync', err);
+      showToast('error', parseContractError(err));
     } finally {
       setPokeLoading(false);
     }
@@ -394,7 +420,7 @@ function UserActions() {
           <input
             type="range"
             min="0"
-            max={goldTab === 'stake' ? userGoldBalance : userGoldStaked}
+            max={goldTab === 'stake' ? userGoldBalance : totalUnstakeableGold}
             step="0.0001"
             value={goldAmount || 0}
             onChange={(e) => setGoldAmount(e.target.value)}
@@ -424,9 +450,9 @@ function UserActions() {
             </button>
           </div>
           <div className="stake-balance">
-            {goldTab === 'stake' 
-              ? `Balance: ${formatNumber(userGoldBalance)} GOLD` 
-              : `Staked: ${formatNumber(userGoldStaked)} GOLD`
+            {goldTab === 'stake'
+              ? `Balance: ${formatNumber(userGoldBalance)} GOLD`
+              : `Unstakeable: ${formatNumber(totalUnstakeableGold)} GOLD`
             }
           </div>
         </div>
@@ -492,13 +518,25 @@ function UserActions() {
         </button>
       </div>
 
-      {/* Toast Notification */}
-      {toast.show && (
+      {/* Toast Notification - Portal to body to escape stacking context */}
+      {toast.show && createPortal(
         <div className={`toast-notification ${toast.type}`}>
-          {toast.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
+          {toast.type === 'success' && <CheckCircle size={18} />}
+          {toast.type === 'error' && <XCircle size={18} />}
+          {toast.type === 'warning' && <AlertCircle size={18} />}
           <span>{toast.message}</span>
-        </div>
+        </div>,
+        document.body
       )}
+
+      {/* Info Modal for friendly error explanations */}
+      <InfoModal
+        isOpen={infoModal.show}
+        onClose={() => setInfoModal({ show: false, title: '', message: '', details: [] })}
+        title={infoModal.title}
+        message={infoModal.message}
+        details={infoModal.details}
+      />
     </div>
   );
 }

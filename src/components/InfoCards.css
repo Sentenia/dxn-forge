@@ -3,14 +3,72 @@
    These styles are removed from Dashboard.css
    ============================================ */
 
+/* ── Collapsible Section ────────────────────── */
+.info-cards-section {
+  max-width: 1000px;
+  margin: 0 auto 40px;
+  padding: 0 20px;
+}
+
+.info-cards-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(16, 16, 20, 0.6);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border: 1px solid var(--gold-10);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: all var(--t);
+  font-family: var(--font);
+  color: var(--text-primary);
+  margin-bottom: 0;
+}
+
+.info-cards-header:hover {
+  background: rgba(20, 20, 26, 0.8);
+  border-color: var(--gold-20);
+}
+
+.info-cards-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--gold);
+}
+
+.info-cards-title svg {
+  opacity: 0.8;
+}
+
+.info-cards-content {
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.25s ease, margin 0.35s ease;
+}
+
+.info-cards-content.expanded {
+  max-height: 600px;
+  opacity: 1;
+  margin-top: 16px;
+}
+
+.info-cards-content.collapsed {
+  max-height: 0;
+  opacity: 0;
+  margin-top: 0;
+}
+
 /* ── Stats Grid ─────────────────────────────── */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
-  max-width: 1000px;
-  margin: 0 auto 40px;
-  padding: 0 20px;
 }
 
 /* ── Stat Card (base in theme.css) ──────────── */
@@ -173,10 +231,13 @@
 
 /* ── Responsive ─────────────────────────────── */
 @media (max-width: 768px) {
+  .info-cards-section {
+    padding: 0 16px;
+  }
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 12px;
-    padding: 0 16px;
   }
   .stat-value { font-size: 22px; }
   .stat-header { font-size: 10px; }
@@ -189,4 +250,12 @@
   }
   .stat-card { padding: 16px; }
   .stat-value { font-size: 24px; }
+
+  .info-cards-header {
+    padding: 10px 14px;
+  }
+
+  .info-cards-title {
+    font-size: 13px;
+  }
 }

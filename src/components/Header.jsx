@@ -39,13 +39,13 @@ function Header({ onNavigate, currentPage = 'stake' }) {
   const TIP_ADDRESS = '0x8B15d4b385eeCeC23cA32C8Dc45a48876d5FcbF4';
 
   const chains = [
-    { name: 'Sepolia', icon: '⟠', chainId: 11155111 },
-    { name: 'Ethereum', icon: '⟠', chainId: 1 },
-    { name: 'BNB Chain', icon: '🟡', chainId: 56 },
-    { name: 'Base', icon: '🔵', chainId: 8453 },
-    { name: 'Optimism', icon: '🔴', chainId: 10 },
-    { name: 'PulseChain', icon: '💜', chainId: 369 },
-    { name: 'Avalanche', icon: '🔺', chainId: 43114 },
+    { name: 'Sepolia', color: '#627eea', chainId: 11155111 },
+    { name: 'Ethereum', color: '#627eea', chainId: 1 },
+    { name: 'BNB Chain', color: '#f3ba2f', chainId: 56 },
+    { name: 'Base', color: '#0052ff', chainId: 8453 },
+    { name: 'Optimism', color: '#ff0420', chainId: 10 },
+    { name: 'PulseChain', color: '#9945ff', chainId: 369 },
+    { name: 'Avalanche', color: '#e84142', chainId: 43114 },
   ];
 
   useEffect(() => {
@@ -284,9 +284,10 @@ function Header({ onNavigate, currentPage = 'stake' }) {
                 className="chain-selector-btn"
                 onClick={() => setShowChainMenu(!showChainMenu)}
               >
-                <span className="chain-icon">
-                  {chains.find(c => c.name === selectedChain)?.icon}
-                </span>
+                <span
+                  className="chain-dot"
+                  style={{ backgroundColor: chains.find(c => c.name === selectedChain)?.color }}
+                />
                 <span className="chain-name">{selectedChain}</span>
                 <ChevronDown size={14} className="chain-arrow" />
               </button>
@@ -299,7 +300,7 @@ function Header({ onNavigate, currentPage = 'stake' }) {
                       className={`chain-option ${selectedChain === chain.name ? 'active' : ''}`}
                       onClick={() => { setSelectedChain(chain.name); setShowChainMenu(false); }}
                     >
-                      <span className="chain-icon">{chain.icon}</span>
+                      <span className="chain-dot" style={{ backgroundColor: chain.color }} />
                       <span>{chain.name}</span>
                       {selectedChain === chain.name && <Check size={16} className="check" />}
                     </button>

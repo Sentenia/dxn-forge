@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Lock,
   Trophy,
@@ -18,6 +19,7 @@ import './LongTermStaking.css';
 import NavAccordion from './NavAccordion';
 import ConfirmModal from './ConfirmModal';
 import { useLTS } from '../hooks/useLTS';
+import { parseContractError, logContractError } from '../utils/contractErrors';
 
 function LongTermStaking({ onNavigate, provider, account }) {
   const [selectedTier, setSelectedTier] = useState(4);
@@ -44,6 +46,7 @@ function LongTermStaking({ onNavigate, provider, account }) {
     totalDXNByTier,
     totalGOLDByTier,
     ltsEthBucket,
+    ltsBuckets,
     tierSnapshots,
     userPendingDXN,
     userPendingGOLD,
@@ -63,6 +66,23 @@ function LongTermStaking({ onNavigate, provider, account }) {
     TIERS,
     refreshData,
   } = useLTS(provider, account);
+
+  // Calculate projected ETH for an NFT based on tier bucket allocation
+  const getProjectedEth = (nft) => {
+    const tierIndex = Number(nft.tier);
+    const tierBucket = parseFloat(ltsBuckets[tierIndex] || '0');
+    const halfBucket = tierBucket / 2; // 50% for DXN, 50% for GOLD
+
+    const tierTotalDxn = totalDXNByTier[tierIndex] || 0;
+    const tierTotalGold = totalGOLDByTier[tierIndex] || 0;
+    const nftAmount = parseFloat(nft.amount);
+
+    if (nft.assetSymbol === 'DXN') {
+      return tierTotalDxn > 0 ? (nftAmount / tierTotalDxn) * halfBucket : 0;
+    } else {
+      return tierTotalGold > 0 ? (nftAmount / tierTotalGold) * halfBucket : 0;
+    }
+  };
 
   // Auto-hide toast after 3 seconds
   useEffect(() => {
@@ -135,8 +155,8 @@ function LongTermStaking({ onNavigate, provider, account }) {
       }
       setAmount('');
     } catch (err) {
-      console.error('Lock failed:', err);
-      showToast('error', `Failed to lock: ${err.reason || err.message}`);
+      logContractError('LTS Lock', err);
+      showToast('error', parseContractError(err));
     } finally {
       setActionLoading(false);
     }
@@ -148,8 +168,8 @@ function LongTermStaking({ onNavigate, provider, account }) {
       await mintLTSNFTs();
       showToast('success', 'NFTs minted successfully! Your positions are now tradeable.');
     } catch (err) {
-      console.error('Mint failed:', err);
-      showToast('error', `Failed to mint NFTs: ${err.reason || err.message}`);
+      logContractError('LTS Mint NFTs', err);
+      showToast('error', parseContractError(err));
     } finally {
       setActionLoading(false);
     }
@@ -165,8 +185,8 @@ function LongTermStaking({ onNavigate, provider, account }) {
       await claimLTS(nft.tokenId);
       showToast('success', `Claimed ${nft.amount} ${nft.assetSymbol} + ${nft.claimableEth} ETH`);
     } catch (err) {
-      console.error('Claim failed:', err);
-      showToast('error', `Failed to claim: ${err.reason || err.message}`);
+      logContractError('LTS Claim', err);
+      showToast('error', parseContractError(err));
     } finally {
       setActionLoading(false);
     }
@@ -178,8 +198,8 @@ function LongTermStaking({ onNavigate, provider, account }) {
       await startNewCrucible();
       showToast('success', `Crucible ${currentCrucible + 1} started! New deposit window is now open.`);
     } catch (err) {
-      console.error('Start crucible failed:', err);
-      showToast('error', `Failed to start new crucible: ${err.reason || err.message}`);
+      logContractError('Start Crucible', err);
+      showToast('error', parseContractError(err));
     } finally {
       setActionLoading(false);
     }
@@ -240,7 +260,7 @@ function LongTermStaking({ onNavigate, provider, account }) {
         <div className="start-crucible-section">
           <div className="start-crucible-card">
             <Flame size={32} className="flame-icon" />
-            <h3>🔥 Crucible {currentCrucible} Complete!</h3>
+            <h3><Flame size={18} className="inline-icon" /> Crucible {currentCrucible} Complete!</h3>
             <p>Tier 5 has matured. Start Crucible {currentCrucible + 1} to open a new 99-day deposit window.</p>
             <button 
               className="start-crucible-btn"
@@ -250,7 +270,7 @@ function LongTermStaking({ onNavigate, provider, account }) {
               {actionLoading ? (
                 <><Loader className="spinner-inline" size={18} /> Starting...</>
               ) : (
-                <>🔥 Start Crucible {currentCrucible + 1}</>
+                <><Flame size={16} className="inline-icon" /> Start Crucible {currentCrucible + 1}</>
               )}
             </button>
           </div>
@@ -340,8 +360,8 @@ function LongTermStaking({ onNavigate, provider, account }) {
                     <span className="tier-stat-value">{goldLocked.toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
                   </div>
                   <div className="tier-stat-row claimable">
-                    <span className="tier-stat-label">ETH Allocation:</span>
-                    <span className="tier-stat-value">{tierEth} ETH</span>
+                    <span className="tier-stat-label">Tier Bucket:</span>
+                    <span className="tier-stat-value">{parseFloat(ltsBuckets[index] || '0').toFixed(8)} ETH</span>
                   </div>
                   {snapshot?.isMature && (
                     <div className="tier-mature-badge">
@@ -473,7 +493,7 @@ function LongTermStaking({ onNavigate, provider, account }) {
               {actionLoading ? (
                 <><Loader className="spinner-inline" size={18} /> Processing...</>
               ) : (
-                <>🔥 Commit {lockType} to ALL Tiers {!canDeposit && '(Window Closed)'}</>
+                <><Flame size={16} className="inline-icon" /> Commit {lockType} to ALL Tiers {!canDeposit && '(Window Closed)'}</>
               )}
             </button>
             <div className="all-tiers-hint">
@@ -519,7 +539,7 @@ function LongTermStaking({ onNavigate, provider, account }) {
           </div>
         ) : windowClosed && userHasMinted ? (
           <div className="no-positions">
-            <p>✅ Your positions have been transformed into NFTs! See "Your NFTs" below.</p>
+            <p><CheckCircle size={16} className="inline-icon check" /> Your positions have been transformed into NFTs! See "Your NFTs" below.</p>
             <p className="subtext">New positions will be available when Crucible {currentCrucible + 1} opens.</p>
           </div>
         ) : windowClosed && hasPendingToMint ? (
@@ -583,6 +603,25 @@ function LongTermStaking({ onNavigate, provider, account }) {
                   <div className="nft-amount">
                     {parseFloat(nft.amount).toLocaleString(undefined, {maximumFractionDigits: 2})} {nft.assetSymbol}
                   </div>
+                  <div className="nft-pool-info">
+                    <span className="pool-total">
+                      of {(nft.assetSymbol === 'DXN'
+                        ? totalDXNByTier[Number(nft.tier)]
+                        : totalGOLDByTier[Number(nft.tier)]
+                      ).toLocaleString(undefined, {maximumFractionDigits: 2})} {nft.assetSymbol} total
+                    </span>
+                    <span className="pool-percent">
+                      {(() => {
+                        const tierTotal = nft.assetSymbol === 'DXN'
+                          ? totalDXNByTier[Number(nft.tier)]
+                          : totalGOLDByTier[Number(nft.tier)];
+                        const percent = tierTotal > 0
+                          ? (parseFloat(nft.amount) / tierTotal) * 100
+                          : 0;
+                        return `${percent.toFixed(1)}% of pool`;
+                      })()}
+                    </span>
+                  </div>
                   
                   <div className="nft-info-row">
                     <span className="nft-label">Lock Period:</span>
@@ -592,7 +631,7 @@ function LongTermStaking({ onNavigate, provider, account }) {
                   <div className="nft-info-row">
                     <span className="nft-label">Maturity:</span>
                     <span className={`nft-value ${nft.isMature ? 'mature-text' : ''}`}>
-                      {nft.isMature ? '✅ READY' : `Day ${nft.unlockCycle}`}
+                      {nft.isMature ? <><CheckCircle size={14} className="inline-icon check" /> READY</> : `Day ${nft.unlockCycle}`}
                     </span>
                   </div>
                   
@@ -604,9 +643,21 @@ function LongTermStaking({ onNavigate, provider, account }) {
                   )}
                   
                   <div className="nft-info-row eth-row">
-                    <span className="nft-label">ETH Share:</span>
-                    <span className="nft-value eth-value">{parseFloat(nft.claimableEth).toFixed(6)} ETH</span>
+                    <span className="nft-label">
+                      {parseFloat(nft.claimableEth) > 0 ? 'ETH Share:' : 'Est. ETH:'}
+                    </span>
+                    <span className={`nft-value ${parseFloat(nft.claimableEth) > 0 ? 'eth-value confirmed' : 'eth-value projected'}`}>
+                      {parseFloat(nft.claimableEth) > 0
+                        ? `${parseFloat(nft.claimableEth).toFixed(6)} ETH`
+                        : `${getProjectedEth(nft).toFixed(6)} ETH`
+                      }
+                    </span>
                   </div>
+                  {parseFloat(nft.claimableEth) === 0 && getProjectedEth(nft) > 0 && (
+                    <div className="nft-info-row eth-note">
+                      <span className="nft-sublabel">(until first claim)</span>
+                    </div>
+                  )}
                   
                   <button 
                     className={`nft-claim-btn ${nft.isMature ? 'ready' : 'locked'}`}
@@ -628,7 +679,7 @@ function LongTermStaking({ onNavigate, provider, account }) {
 
       {/* NFT Trading Info */}
       <div className="nft-trading-info">
-        <h4>💎 NFT Liquidity</h4>
+        <h4><Gem size={18} className="inline-icon" /> NFT Liquidity</h4>
         <div className="nft-info-content">
           <p>
             Need liquidity before maturity? <strong>Sell your NFT!</strong> Your LTS position is a standard ERC-721 token 
@@ -719,11 +770,12 @@ function LongTermStaking({ onNavigate, provider, account }) {
       )}
 
       {/* Toast Notification */}
-      {toast.show && (
+      {toast.show && createPortal(
         <div className={`toast-notification ${toast.type}`}>
           {toast.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
           <span>{toast.message}</span>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

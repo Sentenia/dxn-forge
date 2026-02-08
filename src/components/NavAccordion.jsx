@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Gem, Flame, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
+import { Lock, Gem, Flame, BookOpen, ChevronDown, ChevronUp, Clock, BarChart3, Lightbulb, Ticket } from 'lucide-react';
 import { useForgeData } from '../hooks/useForgeData';
 import './NavAccordion.css';
 
@@ -93,7 +93,7 @@ function NavAccordion({ currentPage, onNavigate }) {
               <span className="tier">4000d</span>
               <span className="tier highlight">5000d</span>
             </div>
-            <p className="accordion-note">⏰ Opens Epoch 26, closes Epoch 51</p>
+            <p className="accordion-note"><Clock size={14} className="inline-icon" /> Opens Epoch 26, closes Epoch 51</p>
           </div>
         )}
       </div>
@@ -155,9 +155,9 @@ function NavAccordion({ currentPage, onNavigate }) {
           <div className="accordion-content">
             <p>Learn how the DXN Forge ecosystem works with detailed explanations and flow diagrams.</p>
             <ul className="accordion-benefits">
-              <li>📊 Protocol flow diagram</li>
-              <li>💡 Staking & burning explained</li>
-              <li>🎫 Tickets & GOLD distribution</li>
+              <li><BarChart3 size={14} className="inline-icon" /> Protocol flow diagram</li>
+              <li><Lightbulb size={14} className="inline-icon bulb" /> Staking & burning explained</li>
+              <li><Ticket size={14} className="inline-icon" /> Tickets & GOLD distribution</li>
             </ul>
           </div>
         )}

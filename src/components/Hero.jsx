@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Zap, Gem, ChevronDown, ChevronUp, Lock, Flame, Coins, Percent, Droplets } from 'lucide-react';
+import { Clock, Zap, Gem, ChevronDown, ChevronUp, Lock, Flame, Coins, Percent, Droplets, BookOpen, CheckCircle, Lightbulb, BarChart3, Target } from 'lucide-react';
 import { useForgeData } from '../hooks/useForgeData';
 import './Hero.css';
 
@@ -7,6 +7,16 @@ function Hero({ onNavigate }) {
   const { protocol, user } = useForgeData();
   const [countdown, setCountdown] = useState('00:00:00');
   const [expandedCard, setExpandedCard] = useState(null);
+  const [statsExpanded, setStatsExpanded] = useState(() => {
+    const saved = localStorage.getItem('hero-stats-expanded');
+    return saved !== null ? saved === 'true' : false; // Default collapsed
+  });
+
+  const toggleStats = () => {
+    const newState = !statsExpanded;
+    setStatsExpanded(newState);
+    localStorage.setItem('hero-stats-expanded', String(newState));
+  };
 
   const getBonus = (epoch) => {
     if (epoch <= 25) {
@@ -72,33 +82,8 @@ function Hero({ onNavigate }) {
 
   return (
     <div className="hero-section">
-      {/* Title Section with Flanking Stats */}
+      {/* Title Section */}
       <div className="hero-title-container">
-        {/* Left Stats: Protocol */}
-        <div className="hero-stats-group hero-stats-left">
-          <div className="hero-stat-card">
-            <Lock size={16} className="hero-stat-icon" />
-            <div className="hero-stat-content">
-              <span className="hero-stat-label">Total DXN Staked</span>
-              <span className="hero-stat-value">{formatNumber(protocol.totalDXNStaked)}</span>
-            </div>
-          </div>
-          <div className="hero-stat-card">
-            <Flame size={16} className="hero-stat-icon fire" />
-            <div className="hero-stat-content">
-              <span className="hero-stat-label">Total DXN Burned</span>
-              <span className="hero-stat-value">{formatNumber(protocol.goldTotalSupply)}</span>
-            </div>
-          </div>
-          <div className="hero-stat-card">
-            <Flame size={16} className="hero-stat-icon xen" />
-            <div className="hero-stat-content">
-              <span className="hero-stat-label">Total XEN Burned</span>
-              <span className="hero-stat-value">{formatNumber(protocol.totalXenBurned)}</span>
-            </div>
-          </div>
-        </div>
-
         {/* Center Title */}
         <div className="hero-title">
           <h1>DXN Forge</h1>
@@ -108,25 +93,59 @@ function Hero({ onNavigate }) {
             <span>Claim fees in:</span>
             <span className="timer-value">{countdown}</span>
           </div>
-        </div>
 
-        {/* Right Stats: User GOLD */}
-        <div className="hero-stats-group hero-stats-right">
-          <div className="hero-stat-card">
+          {/* Stats Toggle */}
+          <button className="stats-toggle" onClick={toggleStats}>
+            <span>Stats</span>
+            {statsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Collapsible Stats Section */}
+      <div className={`hero-stats-wrapper ${statsExpanded ? 'expanded' : 'collapsed'}`}>
+        <div className="hero-stats-container">
+          {/* Row 1 */}
+          <div className="hero-stat-card stat-left">
+            <Lock size={16} className="hero-stat-icon" />
+            <div className="hero-stat-content">
+              <span className="hero-stat-label">Total DXN Staked</span>
+              <span className="hero-stat-value">{formatNumber(protocol.totalDXNStaked)}</span>
+            </div>
+          </div>
+          <div className="hero-stat-card stat-right">
             <Coins size={16} className="hero-stat-icon gold" />
             <div className="hero-stat-content">
               <span className="hero-stat-label">Your GOLD</span>
               <span className="hero-stat-value gold">{formatNumber(userTotalGold, 4)}</span>
             </div>
           </div>
-          <div className="hero-stat-card">
+
+          {/* Row 2 */}
+          <div className="hero-stat-card stat-left">
+            <Flame size={16} className="hero-stat-icon fire" />
+            <div className="hero-stat-content">
+              <span className="hero-stat-label">Total DXN Burned</span>
+              <span className="hero-stat-value">{formatNumber(protocol.goldTotalSupply)}</span>
+            </div>
+          </div>
+          <div className="hero-stat-card stat-right">
             <Percent size={16} className="hero-stat-icon gold" />
             <div className="hero-stat-content">
               <span className="hero-stat-label">Supply Share</span>
               <span className="hero-stat-value gold">{userGoldPercent.toFixed(4)}%</span>
             </div>
           </div>
-          <div className="hero-stat-card">
+
+          {/* Row 3 */}
+          <div className="hero-stat-card stat-left">
+            <Flame size={16} className="hero-stat-icon xen" />
+            <div className="hero-stat-content">
+              <span className="hero-stat-label">Total XEN Burned</span>
+              <span className="hero-stat-value">{formatNumber(protocol.totalXenBurned)}</span>
+            </div>
+          </div>
+          <div className="hero-stat-card stat-right">
             <Droplets size={16} className="hero-stat-icon eth" />
             <div className="hero-stat-content">
               <span className="hero-stat-label">Claimable ETH</span>
@@ -169,7 +188,7 @@ function Hero({ onNavigate }) {
                   <span className="value highlight">{currentBonus}x</span>
                 </div>
               </div>
-              <p className="accordion-note">🔒 DXN locked until Epoch 26</p>
+              <p className="accordion-note"><Lock size={14} className="inline-icon" /> DXN locked until Epoch 26</p>
               <span className="accordion-link">Stake Now →</span>
             </div>
           )}
@@ -200,11 +219,11 @@ function Hero({ onNavigate }) {
                 <span className="tier highlight">5000d</span>
               </div>
               <ul className="accordion-benefits">
-                <li>✅ Exclusive ETH rewards</li>
-                <li>✅ Higher tier = more weight</li>
-                <li>✅ No dilution after lock</li>
+                <li><CheckCircle size={14} className="inline-icon check" /> Exclusive ETH rewards</li>
+                <li><CheckCircle size={14} className="inline-icon check" /> Higher tier = more weight</li>
+                <li><CheckCircle size={14} className="inline-icon check" /> No dilution after lock</li>
               </ul>
-              <p className="accordion-note">⏰ Opens Epoch 26, closes Epoch 51</p>
+              <p className="accordion-note"><Clock size={14} className="inline-icon" /> Opens Epoch 26, closes Epoch 51</p>
               <span className="accordion-link">View Details →</span>
             </div>
           )}
@@ -237,8 +256,35 @@ function Hero({ onNavigate }) {
                   <span className="value">10K batches</span>
                 </div>
               </div>
-              <p className="accordion-note">💡 Tickets earn GOLD from 8.88% buy & burn</p>
+              <p className="accordion-note"><Lightbulb size={14} className="inline-icon bulb" /> Tickets earn GOLD from 8.88% buy & burn</p>
               <span className="accordion-link">Burn XEN →</span>
+            </div>
+          )}
+        </div>
+
+        {/* Card 4: How It Works */}
+        <div className={`accordion-card ${expandedCard === 'howitworks' ? 'expanded' : ''}`}>
+          <button
+            className="accordion-header"
+            onClick={() => toggleCard('howitworks')}
+          >
+            <div className="accordion-title">
+              <BookOpen size={20} />
+              <span>HOW IT WORKS</span>
+              <span className="accordion-badge docs">DOCS</span>
+            </div>
+            {expandedCard === 'howitworks' ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+          </button>
+
+          {expandedCard === 'howitworks' && (
+            <div className="accordion-content clickable" onClick={() => { onNavigate('howitworks'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+              <p>Learn about the <strong>DXN Forge</strong> protocol, tokenomics, and how to maximize your rewards.</p>
+              <ul className="accordion-benefits">
+                <li><BookOpen size={14} className="inline-icon" /> Protocol overview</li>
+                <li><BarChart3 size={14} className="inline-icon" /> Tokenomics breakdown</li>
+                <li><Target size={14} className="inline-icon" /> Strategy guides</li>
+              </ul>
+              <span className="accordion-link">Read Docs →</span>
             </div>
           )}
         </div>

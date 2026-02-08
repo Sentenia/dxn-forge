@@ -123,6 +123,7 @@ export const FORGE_ABI = [
   'function canStartNew() view returns (bool)',
   'function getPending(address, uint256) view returns (uint256[5] dxn, uint256[5] gold, bool minted)',
   'function getTotals(uint256) view returns (uint256[5] dxn, uint256[5] gold)',
+  'function getLtsBuckets() view returns (uint256[5])',
   
   // Crucible Write
   'function addDXN(uint256 amount, uint8 tier)',

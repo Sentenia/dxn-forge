@@ -426,7 +426,12 @@
   border-color: var(--border-hover);
 }
 
-.chain-icon { font-size: 15px; flex-shrink: 0; }
+.chain-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
 .chain-name { white-space: nowrap; }
 .chain-arrow { opacity: 0.4; flex-shrink: 0; }
 

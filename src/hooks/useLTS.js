@@ -35,6 +35,7 @@ export function useLTS(provider, account) {
   const [totalDXNByTier, setTotalDXNByTier] = useState([0, 0, 0, 0, 0]);
   const [totalGOLDByTier, setTotalGOLDByTier] = useState([0, 0, 0, 0, 0]);
   const [ltsEthBucket, setLtsEthBucket] = useState('0');
+  const [ltsBuckets, setLtsBuckets] = useState(['0', '0', '0', '0', '0']);
   
   // Tier snapshots
   const [tierSnapshots, setTierSnapshots] = useState([
@@ -102,9 +103,19 @@ export function useLTS(provider, account) {
       setTotalDXNByTier(totals.dxn.map(v => parseFloat(ethers.formatEther(v))));
       setTotalGOLDByTier(totals.gold.map(v => parseFloat(ethers.formatEther(v))));
       
-      // Get LTS ETH bucket
+      // Get LTS ETH bucket (total)
       const ltsEth = await forge.pendingLts();
       setLtsEthBucket(ethers.formatEther(ltsEth));
+
+      // Get LTS buckets per tier
+      const buckets = await forge.getLtsBuckets();
+      setLtsBuckets([
+        ethers.formatEther(buckets[0]),  // Tier 1 bucket (1000 days, 6.67% weight)
+        ethers.formatEther(buckets[1]),  // Tier 2 bucket (2000 days, 13.33% weight)
+        ethers.formatEther(buckets[2]),  // Tier 3 bucket (3000 days, 20.00% weight)
+        ethers.formatEther(buckets[3]),  // Tier 4 bucket (4000 days, 26.67% weight)
+        ethers.formatEther(buckets[4]),  // Tier 5 bucket (5000 days, 33.33% weight)
+      ]);
       
       // Get tier snapshots
       const snapPromises = [];
@@ -434,6 +445,7 @@ export function useLTS(provider, account) {
     totalDXNByTier,
     totalGOLDByTier,
     ltsEthBucket,
+    ltsBuckets,
     tierSnapshots,
     
     // User state

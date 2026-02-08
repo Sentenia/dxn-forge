@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Flame, Calendar, Ticket, Award, DollarSign, Coins, Info, Lightbulb, TrendingDown, CheckCircle, XCircle } from 'lucide-react';
 import { ethers } from 'ethers';
 import NavAccordion from './NavAccordion';
 import { useWallet } from '../hooks/useWallet';
 import { useForgeData } from '../hooks/useForgeData';
 import { CONTRACTS, FORGE_ABI, ERC20_ABI, getReadProvider } from '../contracts';
+import { parseContractError, logContractError } from '../utils/contractErrors';
 import './BurnXEN.css';
 
 function BurnXEN({ onNavigate }) {
@@ -149,7 +151,7 @@ function BurnXEN({ onNavigate }) {
       await tx.wait();
 
       showToast('success', `Burned ${(batches * xenPerBatch).toLocaleString()} XEN for ${ticketsEarned.toFixed(4)} tickets`);
-      refetch();
+      refetch(true);
 
       // Refresh burn stats
       const [totalBurned, userBurned] = await Promise.all([
@@ -163,8 +165,8 @@ function BurnXEN({ onNavigate }) {
       }));
 
     } catch (err) {
-      console.error('Burn error:', err);
-      showToast('error', `Burn failed: ${err.reason || err.message}`);
+      logContractError('Burn XEN', err);
+      showToast('error', parseContractError(err));
     } finally {
       setLoading(false);
     }
@@ -406,11 +408,12 @@ function BurnXEN({ onNavigate }) {
       </div>
 
       {/* Toast Notification */}
-      {toast.show && (
+      {toast.show && createPortal(
         <div className={`toast-notification ${toast.type}`}>
           {toast.type === 'success' ? <CheckCircle size={18} /> : <XCircle size={18} />}
           <span>{toast.message}</span>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
