@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Copy, FileText, Github, Flame, Twitter, Send, ChevronLeft, ChevronRight, ChevronUp, Check } from 'lucide-react';
 import './Footer.css';
+import { CONTRACTS } from '../contracts';
 
 function Footer({ connectedChain = 'Ethereum', currentPage, onNavigate }) {
   const [copyToast, setCopyToast] = useState(false);
 
   const contracts = {
-    DXN: '0x80f0C1c49891dcFDD40b6e0F960F84E6042bcB6F',
-    FORGE: '0x4EDdFE898bbD3B16Ed7b7fCA7F7f8490b1A22ACa',
-    GOLD: '0x6106Bf468C15D999b7dE22e458A41E77a3FaDdDf',
-  };
+    DXN: CONTRACTS.tDXN,
+    FORGE: CONTRACTS.DXNForge,
+    XEN_BURNER: CONTRACTS.XenBurner,
+    GOLD: CONTRACTS.GOLDToken,
+    };
 
   useEffect(() => {
     if (copyToast) {
@@ -98,6 +100,18 @@ function Footer({ connectedChain = 'Ethereum', currentPage, onNavigate }) {
               <button
                 className="copy-icon-inline"
                 onClick={() => copyToClipboard(contracts.FORGE)}
+                title="Copy address"
+              >
+                <Copy size={16} />
+              </button>
+            </div>
+
+            <div className="contract-item-inline">
+              <span className="contract-label-inline">XEN Burner:</span>
+              <span className="contract-address-inline">{contracts.XEN_BURNER.slice(0, 10)}...{contracts.XEN_BURNER.slice(-6)}</span>
+              <button
+                className="copy-icon-inline"
+                onClick={() => copyToClipboard(contracts.XEN_BURNER)}
                 title="Copy address"
               >
                 <Copy size={16} />
