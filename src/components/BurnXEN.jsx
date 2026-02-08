@@ -5,7 +5,7 @@ import { ethers } from 'ethers';
 import NavAccordion from './NavAccordion';
 import { useWallet } from '../hooks/useWallet';
 import { useForgeData } from '../hooks/useForgeData';
-import { CONTRACTS, FORGE_ABI, ERC20_ABI, getReadProvider } from '../contracts';
+import { CONTRACTS, XENBURNER_ABI, ERC20_ABI, getReadProvider } from '../contracts';
 import { parseContractError, logContractError } from '../utils/contractErrors';
 import './BurnXEN.css';
 
@@ -46,17 +46,17 @@ function BurnXEN({ onNavigate }) {
   useEffect(() => {
     async function fetchBurnStats() {
       if (!window.ethereum) return;
-      
+
       try {
         const provider = getReadProvider();
-        const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, provider);
+        const xenBurner = new ethers.Contract(CONTRACTS.XenBurner, XENBURNER_ABI, provider);
         const xen = new ethers.Contract(CONTRACTS.tXEN, ERC20_ABI, provider);
-        
+
         const [totalBurned, fees] = await Promise.all([
-          forge.xenBurned(),
-          forge.xenFees(),
+          xenBurner.xenBurned(),
+          xenBurner.xenFees(),
         ]);
-        
+
         setBurnStats({
           totalXenBurned: parseFloat(ethers.formatEther(totalBurned)),
           xenFees: parseFloat(ethers.formatEther(fees)),
@@ -65,7 +65,7 @@ function BurnXEN({ onNavigate }) {
         // Fetch user XEN balance if connected
         if (connected && address) {
           const [userBurned, balance] = await Promise.all([
-            forge.userXenBurned(address),
+            xenBurner.userXenBurned(address),
             xen.balanceOf(address),
           ]);
           setBurnStats(prev => ({
@@ -78,7 +78,7 @@ function BurnXEN({ onNavigate }) {
         console.error('Error fetching burn stats:', err);
       }
     }
-    
+
     fetchBurnStats();
   }, [connected, address]);
 
@@ -86,13 +86,13 @@ function BurnXEN({ onNavigate }) {
   useEffect(() => {
     async function calcFee() {
       if (batches === 0) return;
-      
+
       try {
         const provider = getReadProvider();
-        const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, provider);
-        
-        const [fee, disc] = await forge.calcFee(batches);
-        
+        const xenBurner = new ethers.Contract(CONTRACTS.XenBurner, XENBURNER_ABI, provider);
+
+        const [fee, disc] = await xenBurner.calcFee(batches);
+
         setFeeData({
           fee: ethers.formatEther(fee),
           discount: Number(disc) / 100, // disc is in basis points * 100
@@ -101,7 +101,7 @@ function BurnXEN({ onNavigate }) {
         console.error('Error calculating fee:', err);
       }
     }
-    
+
     calcFee();
   }, [batches]);
 
@@ -131,23 +131,23 @@ function BurnXEN({ onNavigate }) {
     try {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
-      const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, signer);
+      const xenBurner = new ethers.Contract(CONTRACTS.XenBurner, XENBURNER_ABI, signer);
       const xen = new ethers.Contract(CONTRACTS.tXEN, ERC20_ABI, signer);
 
-      // Check allowance
-      const allowance = await xen.allowance(address, CONTRACTS.DXNForge);
+      // Check allowance - approve XenBurner contract
+      const allowance = await xen.allowance(address, CONTRACTS.XenBurner);
       const requiredAmount = ethers.parseEther((batches * xenPerBatch).toString());
 
       if (allowance < requiredAmount) {
-        const approveTx = await xen.approve(CONTRACTS.DXNForge, ethers.MaxUint256);
+        const approveTx = await xen.approve(CONTRACTS.XenBurner, ethers.MaxUint256);
         await approveTx.wait();
       }
 
       // Calculate fee
-      const [fee] = await forge.calcFee(batches);
+      const [fee] = await xenBurner.calcFee(batches);
 
       // Burn XEN
-      const tx = await forge.burnXEN(batches, { value: fee });
+      const tx = await xenBurner.burnXEN(batches, { value: fee });
       await tx.wait();
 
       showToast('success', `Burned ${(batches * xenPerBatch).toLocaleString()} XEN for ${ticketsEarned.toFixed(4)} tickets`);
@@ -155,8 +155,8 @@ function BurnXEN({ onNavigate }) {
 
       // Refresh burn stats
       const [totalBurned, userBurned] = await Promise.all([
-        forge.xenBurned(),
-        forge.userXenBurned(address),
+        xenBurner.xenBurned(),
+        xenBurner.userXenBurned(address),
       ]);
       setBurnStats(prev => ({
         ...prev,
