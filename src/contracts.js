@@ -1,17 +1,42 @@
-// Deployed Sepolia Contracts
-export const CONTRACTS = {
-  tDXN: '0x04629d7cEf05fe31250513e875C1Ee6B751946C4',
-  tXEN: '0xf7735BbF9b5623D2b5E242829263aaCAC17dA865',
-  TestDXN: '0x04629d7cEf05fe31250513e875C1Ee6B751946C4',
-  TestXEN: '0xf7735BbF9b5623D2b5E242829263aaCAC17dA865',
-  MockDBXEN: '0x372c37e55F81E43Abb0E9c98CD37f1DD2969A366',
-  GOLDToken: '0x6106Bf468C15D999b7dE22e458A41E77a3FaDdDf',
-  DXNForge: '0xE456171CE6e49118445b6550ca195BED91d46231',
-  XenBurner: '0xF7e8df4128360231AAf0e35b31eeBFAc0C6Bd1cd',
-  DXN: '0x04629d7cEf05fe31250513e875C1Ee6B751946C4',
-  GOLD: '0x6106Bf468C15D999b7dE22e458A41E77a3FaDdDf',
-  XEN: '0xf7735BbF9b5623D2b5E242829263aaCAC17dA865',
+import { ethers } from 'ethers';
+
+// ── Network switch ──
+export const NETWORK = import.meta.env.VITE_NETWORK || 'sepolia';
+
+const ADDRESSES = {
+  sepolia: {
+    DXN: '0x04629d7cEf05fe31250513e875C1Ee6B751946C4',
+    XEN: '0xf7735BbF9b5623D2b5E242829263aaCAC17dA865',
+    tDXN: '0x04629d7cEf05fe31250513e875C1Ee6B751946C4',
+    tXEN: '0xf7735BbF9b5623D2b5E242829263aaCAC17dA865',
+    TestDXN: '0x04629d7cEf05fe31250513e875C1Ee6B751946C4',
+    TestXEN: '0xf7735BbF9b5623D2b5E242829263aaCAC17dA865',
+    MockDBXEN: '0xC4994Af06784b19faB9d8b2FB3Aff96102B71B13',
+    GOLDToken: '0xF86422Bdc89815893973c308a4BBDfe339496f60',
+    DXNForge: '0x72a9296C523bEE37a02b0A16d4DbCfE92a14EFFA',
+    XenBurner: '0x41b80129a229cCcCF689DBBd26fF11f25a65C428',
+    GOLD: '0xF86422Bdc89815893973c308a4BBDfe339496f60',
+  },
+  'mainnet-fork': {
+    DXN: '0x80f0C1c49891dcFDD40b6e0F960F84E6042bcB6F',
+    XEN: '0x06450dEe7FD2Fb8E39061434BAbCFC05599a6Fb8',
+    DBXen: '0xF5c80c305803280B587F8cabBcCdC4d9BF522AbD',
+    GOLDToken: '0x81dcf22C4Ee4bD8EB3BDcb042fEb2Cc824379E0C',
+    DXNForge: '0x56d4d6aEe0278c5Df2FA23Ecb32eC146C9446FDf',
+    XenBurner: '0x28Ed3FC0df885ab756b3aB00cd74F5DfF74c3266',
+    GOLD: '0x81dcf22C4Ee4bD8EB3BDcb042fEb2Cc824379E0C',
+    tDXN: '0x80f0C1c49891dcFDD40b6e0F960F84E6042bcB6F',
+    tXEN: '0x06450dEe7FD2Fb8E39061434BAbCFC05599a6Fb8',
+    TestDXN: '0x80f0C1c49891dcFDD40b6e0F960F84E6042bcB6F',
+    TestXEN: '0x06450dEe7FD2Fb8E39061434BAbCFC05599a6Fb8',
+    MockDBXEN: '0xF5c80c305803280B587F8cabBcCdC4d9BF522AbD',
+  },
+  mainnet: {
+    // Fill in when ready to launch
+  },
 };
+
+export const CONTRACTS = ADDRESSES[NETWORK];
 
 export const ERC20_ABI = [
   'function balanceOf(address) view returns (uint256)',
@@ -27,10 +52,64 @@ export const FAUCET_ABI = [
   'function DRIP_AMOUNT() external view returns (uint256)',
 ];
 
+// ── MockDBXEN ABI (Sepolia only) ──
 export const MOCK_DBXEN_ABI = [
   'function currentCycle() view returns (uint256)',
   'function claimableEth() view returns (uint256)',
   'function totalStaked() view returns (uint256)',
+];
+
+// ── Real DBXen ABI (mainnet / mainnet-fork) ──
+// From verified contract on Etherscan: 0xF5c80c305803280B587F8cabBcCdC4d9BF522AbD
+export const DBXEN_ABI = [
+  // Read - Constants
+  'function MAX_BPS() view returns (uint256)',
+  'function SCALING_FACTOR() view returns (uint256)',
+  'function XEN_BATCH_AMOUNT() view returns (uint256)',
+  'function i_initialTimestamp() view returns (uint256)',
+  'function i_periodDuration() view returns (uint256)',
+
+  // Read - Cycle state
+  'function currentCycle() view returns (uint256)',
+  'function getCurrentCycle() view returns (uint256)',
+  'function currentStartedCycle() view returns (uint256)',
+  'function lastStartedCycle() view returns (uint256)',
+  'function previousStartedCycle() view returns (uint256)',
+  'function currentCycleReward() view returns (uint256)',
+  'function lastCycleReward() view returns (uint256)',
+  'function lastFeeUpdateCycle() view returns (uint256)',
+  'function rewardPerCycle(uint256) view returns (uint256)',
+
+  // Read - Fee state
+  'function accAccruedFees(address) view returns (uint256)',
+  'function cycleAccruedFees(uint256) view returns (uint256)',
+  'function cycleFeesPerStakeSummed(uint256) view returns (uint256)',
+  'function pendingFees() view returns (uint256)',
+  'function totalNumberOfBatchesBurned() view returns (uint256)',
+  'function cycleTotalBatchesBurned(uint256) view returns (uint256)',
+
+  // Read - Staking state
+  'function pendingStake() view returns (uint256)',
+  'function pendingStakeWithdrawal() view returns (uint256)',
+  'function summedCycleStakes(uint256) view returns (uint256)',
+  'function accStakeCycle(address, uint256) view returns (uint256)',
+  'function accFirstStake(address) view returns (uint256)',
+  'function accSecondStake(address) view returns (uint256)',
+  'function accWithdrawableStake(address) view returns (uint256)',
+  'function accRewards(address) view returns (uint256)',
+  'function accCycleBatchesBurned(address, uint256) view returns (uint256)',
+  'function lastActiveCycle(address) view returns (uint256)',
+
+  // Read - Token refs
+  'function dxn() view returns (address)',
+  'function xen() view returns (address)',
+
+  // Write
+  'function stake(uint256 amount)',
+  'function unstake(uint256 amount)',
+  'function claimFees()',
+  'function claimRewards()',
+  'function burnBatch(uint256 batchNumber) payable',
 ];
 
 export const GOLD_ABI = [
@@ -115,6 +194,7 @@ export const FORGE_ABI = [
   'function canStartNew() view returns (bool)',
   'function getPending(address, uint256) view returns (uint256[5] dxn, uint256[5] gold, bool minted)',
   'function getTotals(uint256) view returns (uint256[5] dxn, uint256[5] gold)',
+  'function getLtsBuckets() view returns (uint256[5])',
 
   // Crucible Write
   'function addDXN(uint256 amount, uint8 tier)',
@@ -153,13 +233,14 @@ export const XENBURNER_ABI = [
   'function realBurn() view returns (bool)',
 ];
 
-export const DEPLOY_BLOCK = 10180000;
-
-import { ethers } from 'ethers';
-
-const sepoliaNetwork = ethers.Network.from(11155111);
+export const DEPLOY_BLOCK = NETWORK === 'sepolia' ? 10180000 : 0;
 
 export function getReadProvider() {
+  if (NETWORK === 'mainnet-fork') {
+    return new ethers.JsonRpcProvider('http://127.0.0.1:8545');
+  }
+
+  const sepoliaNetwork = ethers.Network.from(11155111);
   const alchemyKey = import.meta.env.VITE_ALCHEMY_KEY;
 
   const primary = alchemyKey

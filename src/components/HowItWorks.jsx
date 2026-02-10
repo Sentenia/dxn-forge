@@ -379,7 +379,7 @@ function HowItWorks({ onNavigate }) {
 
       {/* Bottom CTA */}
       <div id="hiw-bottom" className="hiw-cta">
-        <h3>Ready to participate?</h3>
+        <h3>Enter the Forge</h3>
         <div className="cta-buttons">
           <button className="cta-btn primary" onClick={() => onNavigate('stake')}>
             <Coins size={18} />

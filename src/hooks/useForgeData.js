@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ethers } from 'ethers';
 import { useWallet } from './useWallet';
-import { CONTRACTS, ERC20_ABI, FORGE_ABI, GOLD_ABI, MOCK_DBXEN_ABI, XENBURNER_ABI, getReadProvider } from '../contracts';
+import { CONTRACTS, NETWORK, ERC20_ABI, FORGE_ABI, GOLD_ABI, MOCK_DBXEN_ABI, DBXEN_ABI, XENBURNER_ABI, getReadProvider } from '../contracts';
 
 const pubProvider = getReadProvider();
+const isRealDBXen = NETWORK === 'mainnet-fork' || NETWORK === 'mainnet';
 
 export function useForgeData() {
   const { address, connected } = useWallet();
@@ -67,7 +68,7 @@ export function useForgeData() {
     // Get minimal protocol data needed for actions
     const [currentEpoch, currentCycle, epochMultiplier, canClaimFees, lastFeeTime] = await Promise.all([
       forge.epoch(),
-      forge.cycle(),
+      forge.forgeCycle(),
       forge.mult(),
       forge.canFee(),
       forge.lastFeeTime(),
@@ -142,8 +143,31 @@ export function useForgeData() {
   const fetchProtocolStats = useCallback(async (currentEpochNum) => {
     const forge = new ethers.Contract(CONTRACTS.DXNForge, FORGE_ABI, pubProvider);
     const gold = new ethers.Contract(CONTRACTS.GOLDToken, GOLD_ABI, pubProvider);
-    const dbxen = new ethers.Contract(CONTRACTS.MockDBXEN, MOCK_DBXEN_ABI, pubProvider);
     const xenBurner = new ethers.Contract(CONTRACTS.XenBurner, XENBURNER_ABI, pubProvider);
+
+    // ── DBXen claimable ETH: use correct ABI per network ──
+    let dbxenClaimable = 0n;
+    const dbxenAddress = CONTRACTS.MockDBXEN || CONTRACTS.DBXen;
+
+    if (isRealDBXen) {
+      // Real DBXen: accAccruedFees(forgeAddress) = what Forge can claim
+      const dbxen = new ethers.Contract(dbxenAddress, DBXEN_ABI, pubProvider);
+      try {
+        dbxenClaimable = await dbxen.accAccruedFees(CONTRACTS.DXNForge);
+      } catch (e) {
+        console.warn('accAccruedFees call failed:', e.message);
+        dbxenClaimable = 0n;
+      }
+    } else {
+      // Sepolia MockDBXEN: simple claimableEth() getter
+      const dbxen = new ethers.Contract(dbxenAddress, MOCK_DBXEN_ABI, pubProvider);
+      try {
+        dbxenClaimable = await dbxen.claimableEth();
+      } catch (e) {
+        console.warn('claimableEth call failed:', e.message);
+        dbxenClaimable = 0n;
+      }
+    }
 
     const [
       pendingBuyBurnEth,
@@ -154,7 +178,6 @@ export function useForgeData() {
       ticketsThisEpoch,
       stakerTixEpoch,
       lastFeeTime,
-      dbxenBalance,
       pendingLts,
       globalLtsDXN,
       globalLtsGold,
@@ -173,7 +196,6 @@ export function useForgeData() {
       forge.tixEpoch(),
       forge.stakerTixEpoch(),
       forge.lastFeeTime(),
-      pubProvider.getBalance(CONTRACTS.MockDBXEN),
       forge.pendingLts(),
       forge.globalLtsDXN(),
       forge.globalLtsGold(),
@@ -185,9 +207,10 @@ export function useForgeData() {
       xenBurner.xenBurned(),
     ]);
 
-    // Calculate claimable ETH
-    const undistributed = forgeBalance - pendingBuyBurnEth - pendingLts - allocLts;
-    const claimableTotal = dbxenBalance + (undistributed > 0n ? undistributed : 0n);
+    // claimableEth = what DBXen will send Forge on next claimFees()
+    // This is the correct value — accAccruedFees(forge) on real DBXen,
+    // or claimableEth() on MockDBXEN for Sepolia
+    const claimableTotal = dbxenClaimable;
 
     // Calculate total GOLD minted (limit to last 10 epochs to avoid slowdown)
     let totalGoldMinted = BigInt(0);

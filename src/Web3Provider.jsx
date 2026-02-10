@@ -37,7 +37,7 @@ export function Web3Provider({ children }) {
         forge: new Contract(CONTRACTS.DXNForge, FORGE_ABI, target),
         gold: new Contract(CONTRACTS.GOLDToken, GOLD_ABI, target),
         dxn: new Contract(CONTRACTS.tDXN, ERC20_ABI, target),
-        dbxen: new Contract(CONTRACTS.MockDBXEN, MOCK_DBXEN_ABI, target),
+        dbxen: CONTRACTS.MockDBXEN ? new Contract(CONTRACTS.MockDBXEN, MOCK_DBXEN_ABI, target) : null,
       });
     }
   }, [signer, provider]);
