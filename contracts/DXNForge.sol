@@ -115,6 +115,8 @@ contract DXNForge is Ownable, ReentrancyGuard, ERC721 {
     uint256 public accEth;
     mapping(address => uint256) public ethDebt;
     uint256 public totEthDist;
+    uint256 public goldEthReserve;  // FIX H1: tracks unclaimed ETH owed to GOLD stakers
+    mapping(address => uint256) public unclaimedEth;  // FIX H2: settled ETH not yet claimed
 
     uint256 public crucible = 1;
 
@@ -197,6 +199,7 @@ contract DXNForge is Ownable, ReentrancyGuard, ERC721 {
     error NoBurn();
     error NoTix();
     error NotBurner();
+    error AlreadySet();
 
     constructor(
         address _dxn,
@@ -221,26 +224,10 @@ contract DXNForge is Ownable, ReentrancyGuard, ERC721 {
         emit CruStart(1, 1, 99, 100);
     }
 
-    // ── Owner functions ──
-    function setBonus(bool _on) external onlyOwner { bonusOn = _on; }
-    function setXenBurner(address _xb) external onlyOwner { xenBurner = _xb; }
-    function advanceEpoch(uint256 n) external onlyOwner { epoch += n; }
-    function injectBurn() external payable onlyOwner { pendingBurn += msg.value; }
-
-    function injectLts() external payable onlyOwner {
-        uint256 used = 0;
-        for (uint8 i = 0; i < 4; i++) {
-            uint256 share = (msg.value * TIER_WT[i]) / TOT_WT;
-            ltsBucket[i] += share;
-            used += share;
-        }
-        ltsBucket[4] += msg.value - used;
-        pendingLts += msg.value;
-    }
-
-    function resetFeeTimer() external onlyOwner {
-        lastFeeTime = 0;
-        lastFeeCycle = 0;
+    // ── Owner function (one-time only, then renounce) ──
+    function setXenBurner(address _xb) external onlyOwner {
+        if (xenBurner != address(0)) revert AlreadySet();
+        xenBurner = _xb;
     }
 
     // ── XenBurner callback: credit tickets + receive fee ETH ──
@@ -293,11 +280,15 @@ contract DXNForge is Ownable, ReentrancyGuard, ERC721 {
         return totAutoGold + manualStaked + manualPending + globalLtsGold;
     }
 
-    function pendEth(address u) public view returns (uint256) {
+    function _rawPendEth(address u) internal view returns (uint256) {  // FIX H2: accumulator-only portion
         uint256 e = userEligGold(u);
         if (e == 0) return 0;
         uint256 owed = (e * accEth) / ACC;
         return owed > ethDebt[u] ? owed - ethDebt[u] : 0;
+    }
+
+    function pendEth(address u) public view returns (uint256) {
+        return unclaimedEth[u] + _rawPendEth(u);  // FIX H2: include previously settled ETH
     }
 
     function canFee() public view returns (bool) {
@@ -401,6 +392,13 @@ contract DXNForge is Ownable, ReentrancyGuard, ERC721 {
         _sync(msg.sender);
         if (!GOLD.transferFrom(msg.sender, address(this), amt)) revert Fail();
         ManualGold storage m = manualGold[msg.sender];
+
+        // FIX H3: if previous pending was already counted in global total, un-count it
+        // before resetting the schedule (otherwise it gets counted again next cycle)
+        if (m.pending > 0 && m.counted) {
+            manualPending -= m.pending;
+        }
+
         m.pending += amt;
         m.earnCy = cycle() + 1;
         m.unlockCy = cycle() + 2;
@@ -427,9 +425,12 @@ contract DXNForge is Ownable, ReentrancyGuard, ERC721 {
         uint256 e = pendEth(msg.sender);
         if (g == 0 && e == 0) revert Zero();
 
-        _cpEth(msg.sender);
+        // FIX H2: clear settled ETH + reset checkpoint (don't use _cpEth which would re-settle)
+        unclaimedEth[msg.sender] = 0;
+        ethDebt[msg.sender] = (userEligGold(msg.sender) * accEth) / ACC;
 
         if (e > 0) {
+            goldEthReserve -= e;  // FIX H1: release reserved ETH
             (bool ok, ) = msg.sender.call{value: e}("");
             if (!ok) revert Fail();
         }
@@ -446,8 +447,11 @@ contract DXNForge is Ownable, ReentrancyGuard, ERC721 {
         uint256 e = pendEth(msg.sender);
         if (e == 0) revert Zero();
 
-        _cpEth(msg.sender);
+        // FIX H2: clear settled ETH + reset checkpoint
+        unclaimedEth[msg.sender] = 0;
+        ethDebt[msg.sender] = (userEligGold(msg.sender) * accEth) / ACC;
 
+        goldEthReserve -= e;  // FIX H1: release reserved ETH
         (bool ok, ) = msg.sender.call{value: e}("");
         if (!ok) revert Fail();
         emit EthClaimed(msg.sender, e);
@@ -462,7 +466,7 @@ contract DXNForge is Ownable, ReentrancyGuard, ERC721 {
 
         DBXEN.claimFees();
 
-        uint256 tot = address(this).balance - pendingBurn - pendingLts - allocLts;
+        uint256 tot = address(this).balance - pendingBurn - pendingLts - allocLts - goldEthReserve;  // FIX H1: exclude unclaimed GOLD staker ETH
 
         if (tot > 0) {
             uint256 toGold = (tot * FEE_GOLD) / FEE_BASE;
@@ -473,6 +477,7 @@ contract DXNForge is Ownable, ReentrancyGuard, ERC721 {
             if (elig > 0) {
                 accEth += (toGold * ACC) / elig;
                 totEthDist += toGold;
+                goldEthReserve += toGold;  // FIX H1: reserve this ETH
             }
 
             pendingBurn += toBurn;
@@ -797,6 +802,7 @@ contract DXNForge is Ownable, ReentrancyGuard, ERC721 {
     }
 
     function _cpEth(address u) internal {
+        unclaimedEth[u] += _rawPendEth(u);  // FIX H2: settle accrued ETH before resetting
         ethDebt[u] = (userEligGold(u) * accEth) / ACC;
     }
 
@@ -825,6 +831,7 @@ contract DXNForge is Ownable, ReentrancyGuard, ERC721 {
 
         if (roll > 0) {
             allocLts -= roll;
+            pendingLts += roll;  // FIX M1: rolled ETH is now back in pending buckets
 
             uint256 remainWt = 0;
             for (uint8 i = t; i < 5; i++) {
