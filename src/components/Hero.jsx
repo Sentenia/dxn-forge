@@ -109,10 +109,14 @@ function Hero({ onNavigate }) {
           <div className="hero-stat-card stat-left">
             <Lock size={16} className="hero-stat-icon" />
             <div className="hero-stat-content">
-              <span className="hero-stat-label">Total DXN Staked</span>
-              <span className="hero-stat-value">{formatNumber(protocol.totalDXNStaked)}</span>
+                <span className="hero-stat-label">Total DXN in Forge</span>
+                <span className="hero-stat-value">
+                {formatNumber(
+                    (parseFloat(protocol.totalDXNPending) + parseFloat(protocol.totalDXNStaked) + parseFloat(protocol.globalLtsDXN)).toString()
+                )}
+                </span>
             </div>
-          </div>
+            </div>
           <div className="hero-stat-card stat-right">
             <Coins size={16} className="hero-stat-icon gold" />
             <div className="hero-stat-content">

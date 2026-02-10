@@ -54,6 +54,9 @@ export function useForgeData() {
     goldStakersPool: '0',
     xenFees: '0',
     totalXenBurned: '0',
+    totalWeight: '0',
+    totalEligibleGold: '0',
+    totalManualGoldPending: '0',
   });
 
   const [user, setUser] = useState({
@@ -169,11 +172,14 @@ export function useForgeData() {
       { contract: xenBurner, fn: 'xenFees' },      // 15
       { contract: gold, fn: 'totalSupply' },       // 16
       { contract: xenBurner, fn: 'xenBurned' },    // 17
+      { contract: forge, fn: 'totWt' },            // 18
+      { contract: forge, fn: 'totEligGold' },      // 19
+      { contract: forge, fn: 'manualPending' },    // 20
     ];
 
     // Batch epoch history calls too (no more loop of individual calls!)
     const startEpoch = Math.max(1, currentEpochNum - 10);
-    const epochBaseIndex = calls.length; // 18
+    const epochBaseIndex = calls.length; // 21
     for (let i = startEpoch; i < currentEpochNum; i++) {
       calls.push(
         { contract: forge, fn: 'epDone', args: [i] },
@@ -202,6 +208,15 @@ export function useForgeData() {
     const dbxenClaimable = r[0] || 0n;
     const ticketsThisEpoch = r[6] || 0n;
     const stakerTixEpoch = r[7] || 0n;
+    const forgeBalance = r[12] || 0n;
+    const pendingBurn = r[1] || 0n;
+    const pendingLts = r[9] || 0n;
+    const allocLts = r[13] || 0n;
+
+    // Total claimable = DBXen fees (not yet claimed) + untracked ETH in Forge (from XenBurner fees etc)
+    // Forge balance minus already-allocated pools = extra ETH sitting in Forge
+    const forgeExtraEth = forgeBalance - pendingBurn - pendingLts - allocLts;
+    const totalClaimable = dbxenClaimable + (forgeExtraEth > 0n ? forgeExtraEth : 0n);
 
     // Calculate total GOLD minted from batched epoch history
     let totalGoldMinted = 0n;
@@ -216,24 +231,27 @@ export function useForgeData() {
 
     setProtocol(prev => ({
       ...prev,
-      claimableEth: ethers.formatEther(dbxenClaimable),
-      pendingBuyBurnEth: ethers.formatEther(r[1] || 0n),
+      claimableEth: ethers.formatEther(totalClaimable),
+      pendingBuyBurnEth: ethers.formatEther(pendingBurn),
       totalDXNPending: ethers.formatEther(r[2] || 0n),
       totalDXNStaked: ethers.formatEther(r[3] || 0n),
       totalAutoStakedGold: ethers.formatEther(r[4] || 0n),
       totalManualGoldStaked: ethers.formatEther(r[5] || 0n),
+      totalManualGoldPending: ethers.formatEther(r[20] || 0n),
       ticketsThisEpoch: Number(ethers.formatEther(ticketsThisEpoch)),
       stakerTickets: Number(ethers.formatEther(stakerTixEpoch)),
       burnerTickets: Number(ethers.formatEther(ticketsThisEpoch - stakerTixEpoch)),
       lastClaimFeesTime: Number(r[8] || 0),
-      pendingLts: ethers.formatEther(r[9] || 0n),
+      pendingLts: ethers.formatEther(pendingLts),
       globalLtsDXN: ethers.formatEther(r[10] || 0n),
       globalLtsGold: ethers.formatEther(r[11] || 0n),
-      forgeBalance: ethers.formatEther(r[12] || 0n),
+      forgeBalance: ethers.formatEther(forgeBalance),
       goldStakersPool: ethers.formatEther(r[14] || 0n),
       xenFees: ethers.formatEther(r[15] || 0n),
       goldTotalSupply: ethers.formatEther(r[16] || 0n),
       totalXenBurned: ethers.formatEther(r[17] || 0n),
+      totalWeight: ethers.formatEther(r[18] || 0n),
+      totalEligibleGold: ethers.formatEther(r[19] || 0n),
       goldSupply: ethers.formatEther(totalGoldMinted),
     }));
 
