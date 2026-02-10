@@ -8,10 +8,12 @@ contract GOLDToken is ERC20, Ownable {
     address public forge;
 
     error OnlyForge();
+    error AlreadySet();
 
     constructor(address _owner) ERC20("DXN GOLD", "GOLD") Ownable(_owner) {}
 
     function setForge(address _forge) external onlyOwner {
+        if (forge != address(0)) revert AlreadySet();
         forge = _forge;
     }
 

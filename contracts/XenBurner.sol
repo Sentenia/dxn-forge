@@ -17,8 +17,6 @@ interface IDXNForge {
 contract XenBurner is Ownable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
-    address private constant DEAD = 0x000000000000000000000000000000000000dEaD;
-
     uint256 public constant XEN_BATCH = 2_500_000 * 1e18;
     uint256 public constant BASE_FEE  = 0.000012 ether;
     uint256 public constant TIX_DEC   = 1e18;
@@ -27,8 +25,6 @@ contract XenBurner is Ownable, ReentrancyGuard {
     IERC20 public immutable XEN_TOKEN;
     IXEN   public immutable XEN;
     IDXNForge public immutable FORGE;
-
-    bool public realBurn;
 
     uint256 public xenBurned;
     uint256 public xenFees;
@@ -50,8 +46,6 @@ contract XenBurner is Ownable, ReentrancyGuard {
         FORGE = IDXNForge(_forge);
     }
 
-    function setRealBurn(bool _on) external onlyOwner { realBurn = _on; }
-
     function calcFee(uint256 b) public pure returns (uint256 fee, uint256 disc) {
         if (b == 0) return (0, 0);
         disc = b / 2;
@@ -66,12 +60,8 @@ contract XenBurner is Ownable, ReentrancyGuard {
 
         // Burn XEN
         uint256 xen = b * XEN_BATCH;
-        if (realBurn) {
-            XEN_TOKEN.safeTransferFrom(msg.sender, address(this), xen);
-            XEN.burn(msg.sender, xen);
-        } else {
-            XEN_TOKEN.safeTransferFrom(msg.sender, DEAD, xen);
-        }
+        XEN_TOKEN.safeTransferFrom(msg.sender, address(this), xen);
+        XEN.burn(msg.sender, xen);
 
         // Credit tickets on Forge (fee ETH forwarded with call)
         uint256 tix = (b * TIX_DEC) / BATCH_TIX;
