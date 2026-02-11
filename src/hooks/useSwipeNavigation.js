@@ -57,6 +57,10 @@ export function useSwipeNavigation(currentPage, onNavigate) {
   const handleTouchStart = useCallback((e) => {
     if (!isEnabled || isAnimating) return;
 
+    // Skip swipe when touching range sliders
+    const target = e.touches[0]?.target;
+    if (target?.tagName === 'INPUT' && target?.type === 'range') return;
+
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
     currentDragX.current = 0;
