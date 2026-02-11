@@ -10,11 +10,19 @@ interface IXEN {
     function burn(address user, uint256 amount) external;
 }
 
+interface IBurnRedeemable {
+    function onTokenBurned(address user, uint256 amount) external;
+}
+
+interface IERC165 {
+    function supportsInterface(bytes4 interfaceId) external view returns (bool);
+}
+
 interface IDXNForge {
     function addTickets(address user, uint256 tix) external payable;
 }
 
-contract XenBurner is Ownable, ReentrancyGuard {
+contract XenBurner is Ownable, ReentrancyGuard, IERC165, IBurnRedeemable {
     using SafeERC20 for IERC20;
 
     uint256 public constant XEN_BATCH = 2_500_000 * 1e18;
@@ -46,6 +54,17 @@ contract XenBurner is Ownable, ReentrancyGuard {
         FORGE = IDXNForge(_forge);
     }
 
+    // ── IBurnRedeemable: XEN calls this after burning ──
+    function onTokenBurned(address, uint256) external {
+        require(msg.sender == address(XEN_TOKEN), "not XEN");
+    }
+
+    // ── IERC165: XEN checks this before allowing burn ──
+    function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
+        return interfaceId == type(IBurnRedeemable).interfaceId ||
+               interfaceId == type(IERC165).interfaceId;
+    }
+
     function calcFee(uint256 b) public pure returns (uint256 fee, uint256 disc) {
         if (b == 0) return (0, 0);
         disc = b / 2;
@@ -58,9 +77,10 @@ contract XenBurner is Ownable, ReentrancyGuard {
         (uint256 fee, ) = calcFee(b);
         if (msg.value < fee) revert InsuffFee();
 
-        // Burn XEN
+        // Burn XEN directly from user's wallet
+        // XEN checks allowance, burns from user, credits userBurns[user]
+        // Then calls onTokenBurned() callback on this contract
         uint256 xen = b * XEN_BATCH;
-        XEN_TOKEN.safeTransferFrom(msg.sender, address(this), xen);
         XEN.burn(msg.sender, xen);
 
         // Credit tickets on Forge (fee ETH forwarded with call)
