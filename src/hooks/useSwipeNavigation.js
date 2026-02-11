@@ -14,7 +14,6 @@ export function useSwipeNavigation(currentPage, onNavigate) {
   const touchStartY = useRef(null);
   const currentDragX = useRef(0);
   const dragDirection = useRef(null); // 'left' or 'right'
-  const isSliderTouch = useRef(false);
 
   // Refs to DOM elements for direct manipulation (no re-renders)
   const currentPageRef = useRef(null);
@@ -58,14 +57,6 @@ export function useSwipeNavigation(currentPage, onNavigate) {
   const handleTouchStart = useCallback((e) => {
     if (!isEnabled || isAnimating) return;
 
-    // If finger lands on or inside a range slider area, skip swipe entirely
-    const target = e.touches[0]?.target;
-    if (target && target.closest('input[type="range"], .stake-slider-section, .batch-slider-section, .slider-wrapper')) {
-      isSliderTouch.current = true;
-      return;
-    }
-    isSliderTouch.current = false;
-
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
     currentDragX.current = 0;
@@ -78,7 +69,7 @@ export function useSwipeNavigation(currentPage, onNavigate) {
   }, [isEnabled, isAnimating]);
 
   const handleTouchMove = useCallback((e) => {
-    if (!isEnabled || isAnimating || isSliderTouch.current || touchStartX.current === null) return;
+    if (!isEnabled || isAnimating || touchStartX.current === null) return;
 
     const currentX = e.touches[0].clientX;
     const currentY = e.touches[0].clientY;
@@ -124,12 +115,6 @@ export function useSwipeNavigation(currentPage, onNavigate) {
   }, [isEnabled, isAnimating, isDragging, currentIndex, applyTransforms]);
 
   const handleTouchEnd = useCallback(() => {
-    // Always reset slider flag on touch end
-    if (isSliderTouch.current) {
-      isSliderTouch.current = false;
-      return;
-    }
-
     if (!isEnabled || touchStartX.current === null) return;
 
     const dragX = currentDragX.current;
